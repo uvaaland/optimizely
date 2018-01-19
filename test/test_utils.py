@@ -1,5 +1,7 @@
 import pytest
 import os
+import requests
+import requests_mock
 from context import utils
 
 
@@ -30,3 +32,14 @@ def test_ReadFileURL_multiple(prefix):
     assert len(urls) == 3
     for u in urls:
         assert u == "http://example.org/"
+
+def test_RequestURL():
+    urls = ["http://example.org/", "http://badurl.com"]
+    reqs, urls_fail = utils.RequestURL(urls)
+
+    assert False == True
+
+
+
+
+
