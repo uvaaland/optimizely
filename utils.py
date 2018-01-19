@@ -9,8 +9,7 @@ def ReadFileToken(token="token/token.txt"):
 
 def ReadFileURL(urlfile):
     with open(urlfile, 'r') as f:
-        pass
-        
+        return f.read().splitlines()
 
 def WriteFileURL():
     pass
