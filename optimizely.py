@@ -4,9 +4,14 @@ import pandas as pd
 import io
 
 
-def _GetRequests(name, verbose=True):
+HEADER = "{0:^80}"
+STATUS_BAR = "{0:^10}{1:^60}{2:^10}"
+HORIZONTAL_RULE = "-"*80
+
+
+def _GetRequests(param, verbose=True):
     token = utils.ReadFileToken()
-    urls = utils.ReadFileURL("urls/{}.url".format(name))
+    urls = utils.ReadFileURL("urls/{}.url".format(param))
 
     session = requests.Session()
     reqs = {'success':[], 'failure':[]}
@@ -19,7 +24,10 @@ def _GetRequests(name, verbose=True):
 
         if verbose:
             count = "[{0:03}/{1:03}]:".format(i+1, len(urls))
-            print("{0:^10}{1:^60}{2:^10}".format(count, ".../" + r.url[31:], str(r.ok)))
+            print(STATUS_BAR.format(count, ".../" + r.url[31:], str(r.ok)))
+
+    if verbose:
+        print(HORIZONTAL_RULE)
 
     with open("urls/failures.url", 'w') as f:
         for r in reqs['failure']:
@@ -28,15 +36,17 @@ def _GetRequests(name, verbose=True):
     return reqs['success']
 
 
-def _RequestsToDataframe(reqs, name, verbose=True):
+def _RequestsToDataframe(reqs, param, verbose=True):
     try:
         dfs = [pd.DataFrame(r.json()) for r in reqs]
     except ValueError:
         dfs = [pd.DataFrame(r.json(), index=[i]) for i, r in enumerate(reqs)]
 
     dfs = pd.concat(dfs)
-
-    dfs.to_csv("output/{}.csv".format(name), index=False)
+    dfs.to_csv("output/{}.csv".format(param), index=False)
+    
+    if verbose:
+        print("Saved '{0}' frame to 'output/{0}.csv'.".format(param))
 
     return dfs
 
@@ -59,40 +69,26 @@ def _GenerateUrls(df, target, verbose=True):
         for u in urls:
             f.write(u + '\n')
 
+    if verbose:
+        print("Saved '{0}' urls to 'urls/{0}.url'.".format(target))
 
-def Main():
-    print("-"*80)
-    print(" "*30 + "GETTING REQUESTS")
-    print("-"*80)
 
-    print("{0:^10}{1:^60}{2:^10}".format("#", "REQUEST (https://www.optimizelyapis.com/...)", "SUCCESS"))
-    print("-"*80)
+def Main(verbose=True):
 
-    name = "projects"
-    reqs = _GetRequests(name)
+    if verbose:
+        print(HORIZONTAL_RULE)
+        print(HEADER.format("GETTING REQUESTS"))
+        print(HORIZONTAL_RULE)
+        print(STATUS_BAR.format("#", "REQUEST (https://www.optimizelyapis.com/...)", "SUCCESS"))
+        print(HORIZONTAL_RULE)
 
-    print("-"*80)
+    reqs = _GetRequests("projects", verbose=verbose)
+    dataframe = _RequestsToDataframe(reqs, "projects", verbose=verbose) 
+    _GenerateUrls(dataframe, "experiments", verbose=verbose)
 
-    df = _RequestsToDataframe(reqs, name) 
-    _GenerateUrls(df, "experiments")
-
-    print("\n***\n")
-
-    print("-"*80)
-    print(" "*30 + "GETTING REQUESTS")
-    print("-"*80)
-
-    print("{0:^10}{1:^60}{2:^10}".format("#", "REQUEST (https://www.optimizelyapis.com/...)", "SUCCESS"))
-    print("-"*80)
-
-    name = "experiments"
-    reqs = _GetRequests(name)
-
-    print("-"*80)
-
-    df = _RequestsToDataframe(reqs, name) 
-    _GenerateUrls(df, "stats")
+    if verbose:
+        print(HORIZONTAL_RULE)
 
 
 if __name__ == "__main__":
-    Main()
+        Main()
