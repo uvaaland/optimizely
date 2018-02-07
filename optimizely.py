@@ -14,13 +14,13 @@ def _GetRequests(param, verbose=True):
     urls = utils.ReadFileURL("urls/{}.url".format(param))
 
     session = requests.Session()
-    reqs = {'success':[], 'failure':[]}
+    reqs = {"success":[], "failure":[]}
     for i, u in enumerate(urls):
         r = session.get(u, headers={'Token': token})
         if r.ok:
-            reqs['success'].append(r)
+            reqs["success"].append(r)
         else:
-            reqs['failure'].append(r)
+            reqs["failure"].append(r)
 
         if verbose:
             count = "[{0:03}/{1:03}]:".format(i+1, len(urls))
@@ -30,10 +30,10 @@ def _GetRequests(param, verbose=True):
         print(HORIZONTAL_RULE)
 
     with open("urls/failures.url", 'w') as f:
-        for r in reqs['failure']:
+        for r in reqs["failure"]:
             f.write(r.url + '\n')
 
-    return reqs['success']
+    return reqs["success"]
 
 
 def _RequestsToDataframe(reqs, param, verbose=True):
@@ -53,15 +53,15 @@ def _RequestsToDataframe(reqs, param, verbose=True):
 
 def _GenerateUrls(df, target, verbose=True):
     target_url = {
-                    'experiments' : "https://www.optimizelyapis.com/experiment/v1/projects/{}/experiments/",
-                    'stats'       : "https://www.optimizelyapis.com/experiment/v1/experiments/{}/stats",
-                    'variations'  : "https://www.optimizelyapis.com/experiment/v1/variations/{}"
+                    "experiments" : "https://www.optimizelyapis.com/experiment/v1/projects/{}/experiments/",
+                    "stats"       : "https://www.optimizelyapis.com/experiment/v1/experiments/{}/stats",
+                    "variations"  : "https://www.optimizelyapis.com/experiment/v1/variations/{}"
                  }[target]
 
-    if target == 'variations':
-        ids = [item for sublist in df['variation_ids'] for item in sublist]
+    if target == "variations":
+        ids = [item for sublist in df["variation_ids"] for item in sublist]
     else:
-        ids = df['id']
+        ids = df["id"]
 
     urls = [target_url.format(i) for i in ids]
     
@@ -73,22 +73,29 @@ def _GenerateUrls(df, target, verbose=True):
         print("Saved '{0}' urls to 'urls/{0}.url'.".format(target))
 
 
-def Main(verbose=True):
+def Main(param, verbose=True):
 
     if verbose:
         print(HORIZONTAL_RULE)
-        print(HEADER.format("GETTING REQUESTS"))
+        print(HEADER.format(param.upper()))
         print(HORIZONTAL_RULE)
         print(STATUS_BAR.format("#", "REQUEST (https://www.optimizelyapis.com/...)", "SUCCESS"))
         print(HORIZONTAL_RULE)
 
-    reqs = _GetRequests("projects", verbose=verbose)
-    dataframe = _RequestsToDataframe(reqs, "projects", verbose=verbose) 
-    _GenerateUrls(dataframe, "experiments", verbose=verbose)
+    reqs = _GetRequests(param, verbose=verbose)
+    dataframe = _RequestsToDataframe(reqs, param, verbose=verbose) 
+
+    if param == "projects":
+        _GenerateUrls(dataframe, "experiments", verbose=verbose)
+    elif param == "experiments":
+        _GenerateUrls(dataframe, "stats", verbose=verbose)
+        _GenerateUrls(dataframe, "variations", verbose=verbose)
 
     if verbose:
         print(HORIZONTAL_RULE)
 
 
 if __name__ == "__main__":
-        Main()
+    parameters = ["projects", "experiments", "stats", "variations"]
+    for param in parameters:
+        Main(param)
