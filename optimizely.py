@@ -3,9 +3,9 @@ import requests
 import pandas as pd
 import io
 
-def Fetch(urlfile, verbose=True):
+def Fetch(name, verbose=True):
     token = utils.ReadFileToken()
-    urls = utils.ReadFileURL(urlfile)
+    urls = utils.ReadFileURL("urls/{}.url".format(name))
 
     session = requests.Session()
     reqs = {'success':[], 'failure':[]}
@@ -26,23 +26,27 @@ def Fetch(urlfile, verbose=True):
     return reqs['success']
 
 
-def Tinker(reqs, target, verbose=True):
+def Store(reqs, name, verbose=True):
     dfs = [pd.DataFrame(r.json()) for r in reqs]
     dfs = pd.concat(dfs)
 
-    origin = {
-                'experiments' : 'projects',
-                'stats' : 'experiments'
-             }[target]
+    dfs.to_csv("output/{}.csv".format(name), index=False)
 
-    dfs.to_csv("output/{}.csv".format(origin), index=False)
+    return dfs
 
+
+def Tinker(df, target, verbose=True):
     target_url = {
                     'experiments' : "https://www.optimizelyapis.com/experiment/v1/projects/{}/experiments/",
-                    'stats' : "https://www.optimizelyapis.com/experiment/v1/experiments/{}/stats"
+                    'stats'       : "https://www.optimizelyapis.com/experiment/v1/experiments/{}/stats",
+                    'variations'  : "https://www.optimizelyapis.com/experiment/v1/variations/{}"
                  }[target]
 
-    ids = dfs['id']
+    if target == 'variations':
+        ids = [item for sublist in df['variation_ids'] for item in sublist]
+        print(len(ids))
+    else:
+        ids = df['id']
 
     urls = [target_url.format(i) for i in ids]
     
@@ -50,17 +54,19 @@ def Tinker(reqs, target, verbose=True):
         for u in urls:
             f.write(u + '\n')
 
+
 if __name__ == "__main__":
-#    urlfile = "urls/projects.url"
-#    reqs = Fetch(urlfile)
-#    Tinker(reqs, "experiments")
+#    name = "projects"
+#    reqs = Fetch(name)
+#    df = Store(reqs, name) 
+#    Tinker(df, "experiments")
 
-#    urlfile = "urls/experiments.url"
-#    reqs = Fetch(urlfile)
-#    Tinker(reqs, "stats")
-
-    urlfile = "urls/stats.url"
-    reqs = Fetch(urlfile)
-    Tinker(reqs, "stats")
-
-
+#    name = "experiments"
+#    reqs = Fetch(name)
+#    df = Store(reqs, name) 
+#    Tinker(df, "stats")
+    
+    name = "experiments"
+    reqs = Fetch(name)
+    df = Store(reqs, name) 
+    Tinker(df, "variations")
