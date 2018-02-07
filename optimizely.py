@@ -26,20 +26,41 @@ def Fetch(urlfile, verbose=True):
     return reqs['success']
 
 
-def Tinker(reqs, verbose=True):
+def Tinker(reqs, target, verbose=True):
     dfs = [pd.DataFrame(r.json()) for r in reqs]
     dfs = pd.concat(dfs)
 
-    dfs.to_csv("test.csv", index=False)
+    origin = {
+                'experiments' : 'projects',
+                'stats' : 'experiments'
+             }[target]
+
+    dfs.to_csv("output/{}.csv".format(origin), index=False)
+
+    target_url = {
+                    'experiments' : "https://www.optimizelyapis.com/experiment/v1/projects/{}/experiments/",
+                    'stats' : "https://www.optimizelyapis.com/experiment/v1/experiments/{}/stats"
+                 }[target]
 
     ids = dfs['id']
 
-    base_url = {
-                'projects' : "https://www.optimizelyapis.com/experiment/v1/projects/{}/experiments/"
-               }
+    urls = [target_url.format(i) for i in ids]
     
+    with open("urls/{}.url".format(target), 'w') as f:
+        for u in urls:
+            f.write(u + '\n')
+
 if __name__ == "__main__":
-    urlfile = "urls/projects.url"
+#    urlfile = "urls/projects.url"
+#    reqs = Fetch(urlfile)
+#    Tinker(reqs, "experiments")
+
+#    urlfile = "urls/experiments.url"
+#    reqs = Fetch(urlfile)
+#    Tinker(reqs, "stats")
+
+    urlfile = "urls/stats.url"
     reqs = Fetch(urlfile)
-    Tinker(reqs)
+    Tinker(reqs, "stats")
+
 
