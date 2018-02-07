@@ -4,7 +4,7 @@ import pandas as pd
 import io
 
 
-def GetRequests(name, verbose=True):
+def _GetRequests(name, verbose=True):
     token = utils.ReadFileToken()
     urls = utils.ReadFileURL("urls/{}.url".format(name))
 
@@ -18,7 +18,8 @@ def GetRequests(name, verbose=True):
             reqs['failure'].append(r)
 
         if verbose:
-            print(i, r.url, r.ok)
+            count = "[{0:03}/{1:03}]:".format(i+1, len(urls))
+            print("{0:^10}{1:^60}{2:^10}".format(count, ".../" + r.url[31:], str(r.ok)))
 
     with open("urls/failures.url", 'w') as f:
         for r in reqs['failure']:
@@ -27,7 +28,7 @@ def GetRequests(name, verbose=True):
     return reqs['success']
 
 
-def RequestsToDataframe(reqs, name, verbose=True):
+def _RequestsToDataframe(reqs, name, verbose=True):
     try:
         dfs = [pd.DataFrame(r.json()) for r in reqs]
     except ValueError:
@@ -40,7 +41,7 @@ def RequestsToDataframe(reqs, name, verbose=True):
     return dfs
 
 
-def GenerateUrls(df, target, verbose=True):
+def _GenerateUrls(df, target, verbose=True):
     target_url = {
                     'experiments' : "https://www.optimizelyapis.com/experiment/v1/projects/{}/experiments/",
                     'stats'       : "https://www.optimizelyapis.com/experiment/v1/experiments/{}/stats",
@@ -59,8 +60,39 @@ def GenerateUrls(df, target, verbose=True):
             f.write(u + '\n')
 
 
-if __name__ == "__main__":
+def Main():
+    print("-"*80)
+    print(" "*30 + "GETTING REQUESTS")
+    print("-"*80)
+
+    print("{0:^10}{1:^60}{2:^10}".format("#", "REQUEST (https://www.optimizelyapis.com/...)", "SUCCESS"))
+    print("-"*80)
+
     name = "projects"
-    reqs = GetRequests(name)
-    df = RequestsToDataframe(reqs, name) 
-    GenerateUrls(df, "experiments")
+    reqs = _GetRequests(name)
+
+    print("-"*80)
+
+    df = _RequestsToDataframe(reqs, name) 
+    _GenerateUrls(df, "experiments")
+
+    print("\n***\n")
+
+    print("-"*80)
+    print(" "*30 + "GETTING REQUESTS")
+    print("-"*80)
+
+    print("{0:^10}{1:^60}{2:^10}".format("#", "REQUEST (https://www.optimizelyapis.com/...)", "SUCCESS"))
+    print("-"*80)
+
+    name = "experiments"
+    reqs = _GetRequests(name)
+
+    print("-"*80)
+
+    df = _RequestsToDataframe(reqs, name) 
+    _GenerateUrls(df, "stats")
+
+
+if __name__ == "__main__":
+    Main()
