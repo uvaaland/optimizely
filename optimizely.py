@@ -20,7 +20,7 @@ def GetRequests(name, verbose=True):
         if verbose:
             print(i, r.url, r.ok)
 
-    with open("fail.txt", 'w') as f:
+    with open("urls/failures.url", 'w') as f:
         for r in reqs['failure']:
             f.write(r.url + '\n')
 
