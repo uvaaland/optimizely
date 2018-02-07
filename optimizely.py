@@ -3,13 +3,14 @@ import requests
 import pandas as pd
 import io
 
-def Fetch(name, verbose=True):
+
+def GetRequests(name, verbose=True):
     token = utils.ReadFileToken()
     urls = utils.ReadFileURL("urls/{}.url".format(name))
 
     session = requests.Session()
     reqs = {'success':[], 'failure':[]}
-    for u in urls:
+    for i, u in enumerate(urls):
         r = session.get(u, headers={'Token': token})
         if r.ok:
             reqs['success'].append(r)
@@ -17,7 +18,7 @@ def Fetch(name, verbose=True):
             reqs['failure'].append(r)
 
         if verbose:
-            print(r.url, r.ok)
+            print(i, r.url, r.ok)
 
     with open("fail.txt", 'w') as f:
         for r in reqs['failure']:
@@ -26,8 +27,12 @@ def Fetch(name, verbose=True):
     return reqs['success']
 
 
-def Store(reqs, name, verbose=True):
-    dfs = [pd.DataFrame(r.json()) for r in reqs]
+def RequestsToDataframe(reqs, name, verbose=True):
+    try:
+        dfs = [pd.DataFrame(r.json()) for r in reqs]
+    except ValueError:
+        dfs = [pd.DataFrame(r.json(), index=[i]) for i, r in enumerate(reqs)]
+
     dfs = pd.concat(dfs)
 
     dfs.to_csv("output/{}.csv".format(name), index=False)
@@ -35,7 +40,7 @@ def Store(reqs, name, verbose=True):
     return dfs
 
 
-def Tinker(df, target, verbose=True):
+def GenerateUrls(df, target, verbose=True):
     target_url = {
                     'experiments' : "https://www.optimizelyapis.com/experiment/v1/projects/{}/experiments/",
                     'stats'       : "https://www.optimizelyapis.com/experiment/v1/experiments/{}/stats",
@@ -44,7 +49,6 @@ def Tinker(df, target, verbose=True):
 
     if target == 'variations':
         ids = [item for sublist in df['variation_ids'] for item in sublist]
-        print(len(ids))
     else:
         ids = df['id']
 
@@ -56,17 +60,7 @@ def Tinker(df, target, verbose=True):
 
 
 if __name__ == "__main__":
-#    name = "projects"
-#    reqs = Fetch(name)
-#    df = Store(reqs, name) 
-#    Tinker(df, "experiments")
-
-#    name = "experiments"
-#    reqs = Fetch(name)
-#    df = Store(reqs, name) 
-#    Tinker(df, "stats")
-    
-    name = "experiments"
-    reqs = Fetch(name)
-    df = Store(reqs, name) 
-    Tinker(df, "variations")
+    name = "projects"
+    reqs = GetRequests(name)
+    df = RequestsToDataframe(reqs, name) 
+    GenerateUrls(df, "experiments")
