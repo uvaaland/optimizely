@@ -75,11 +75,10 @@ def _GetRequestsSync(urls, token, verbose):
             count = "[{0:03}/{1:03}]:".format(i+1, len(urls))
             print(STATUS_BAR.format(count, ".../" + r.url[31:], str(status == 200)))
 
-
     return responses
 
 
-def GetRequests(urls, token, async=True, verbose=True):
+def GetRequests(urls, token, async=False, verbose=True):
     """Takes in a list of urls and a token and makes a request for each url in
     the list. Returns a dictionary with two keys, 'success' and 'failure',
     which map to lists containing the request objects for the successful and
@@ -102,18 +101,7 @@ def GetRequests(urls, token, async=True, verbose=True):
         print("Elapsed time: {0:63.2f}s".format(elapsed_time))
         print(HORIZONTAL_RULE)
 
-    reqs = {"success":[], "failure":[]}
-    for url in urls:
-        if responses[url][0] == 200:
-            reqs["success"].append(responses[url][1])
-        else:
-            reqs["failure"].append(url)
-
-    with open("urls/failures.url", 'w') as f:
-        for url in reqs["failure"]:
-            f.write(url + '\n')
-
-    return reqs["success"]
+    return responses 
 
 
 def RequestsToDataframe(reqs, param, verbose=True):
@@ -167,8 +155,17 @@ def Main(param, verbose=True):
         urls = f.read().splitlines()
 
     responses = GetRequests(urls, token, verbose=verbose)
-    dataframe = RequestsToDataframe(responses, param, verbose=verbose) 
 
+    urls_fail = [url for url in urls if responses[url][0] != 200]
+    with open("urls/failures.url", 'w' if param == 'projects' else 'a') as f:
+        for url in urls_fail:
+            f.write(url + '\n')
+            responses.pop(url, None)
+
+    content = [v[1] for v in list(responses.values())]
+
+
+    dataframe = RequestsToDataframe(content, param, verbose=verbose) 
 
     # Write to file
     dataframe.to_csv("output/{}.csv".format(param), index=False)
@@ -187,8 +184,6 @@ def Main(param, verbose=True):
 
 
 if __name__ == "__main__":
-#    parameters = ["projects", "experiments", "stats", "variations"]
-    parameters = ["projects", "experiments"]
-#    parameters = ["stats"]
+    parameters = ["projects", "experiments", "stats", "variations"]
     for param in parameters:
         Main(param)
