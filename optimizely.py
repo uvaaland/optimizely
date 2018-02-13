@@ -29,14 +29,15 @@ async def Fetch(i, url, token, session, verbose=True):
     """Fetch a url, using specified ClientSession."""
 
     header = {'Token': token}
-    async with session.get(url, headers=header) as r:
-        _ = await r.read()
+    async with session.get(url, headers=header) as response:
+        content = await response.json()
+        status = response.status
 
         if verbose:
             count = "[{0:03}/{1:03}]:".format(i+1, 100)
-            print(STATUS_BAR.format(count, ".../" + url[31:], str(r.status == 200)))
+            print(STATUS_BAR.format(count, ".../" + url[31:], str(status == 200)))
 
-        return r
+        return {url : (status, content)}
 
 
 def _GetRequestsAsync(urls, token, verbose):
@@ -46,7 +47,7 @@ def _GetRequestsAsync(urls, token, verbose):
     future = asyncio.ensure_future(FetchAll(urls, token))
     responses = loop.run_until_complete(future)
 
-    return responses
+    return { k : v for d in responses for (k, v) in d.items() }
 
 
 def _GetRequestsSync(urls, token, verbose):
@@ -62,7 +63,7 @@ def _GetRequestsSync(urls, token, verbose):
             count = "[{0:03}/{1:03}]:".format(i+1, len(urls))
             print(STATUS_BAR.format(count, ".../" + r.url[31:], str(r.ok)))
 
-        responses[url] = (r.json(), r.status_code)
+        responses[url] = (r.status_code, r.json())
 
     return responses
 
@@ -81,36 +82,25 @@ def _GetRequests(urls, token, async=False, verbose=True):
     if verbose:
         print(HORIZONTAL_RULE)
 
-    print(responses[urls[0]])
-
     reqs = {"success":[], "failure":[]}
-    if async:
-        for r in responses:
-            if r.status == 200:
-                reqs["success"].append(r)
-            else:
-                reqs["failure"].append(r)
-    else:
-        for r in responses:
-            if r.ok:
-                reqs["success"].append(r)
-            else:
-                reqs["failure"].append(r)
-
-
+    for url in urls:
+        if responses[url][0] == 200:
+            reqs["success"].append(responses[url][1])
+        else:
+            reqs["failure"].append(url)
 
     with open("urls/failures.url", 'w') as f:
-        for r in reqs["failure"]:
-            f.write(r.url + '\n')
+        for url in reqs["failure"]:
+            f.write(url + '\n')
 
     return reqs["success"]
 
 
 def _RequestsToDataframe(reqs, param, verbose=True):
     try:
-        dfs = [pd.DataFrame(r.json()) for r in reqs]
+        dfs = [pd.DataFrame(r) for r in reqs]
     except ValueError:
-        dfs = [pd.DataFrame(r.json(), index=[i]) for i, r in enumerate(reqs)]
+        dfs = [pd.DataFrame(r, index=[i]) for i, r in enumerate(reqs)]
 
     dfs = pd.concat(dfs)
     dfs.to_csv("output/{}.csv".format(param), index=False)
@@ -154,17 +144,17 @@ def Main(param, verbose=True):
 
 
     token = utils.ReadFileToken()
-    urls = utils.ReadFileURL("urls/{}.url".format(param))[:1]
+    urls = utils.ReadFileURL("urls/{}.url".format(param))
 
 
     reqs = _GetRequests(urls, token, verbose=verbose)
     dataframe = _RequestsToDataframe(reqs, param, verbose=verbose) 
 
-#    if param == "projects":
-#        _GenerateUrls(dataframe, "experiments", verbose=verbose)
-#    elif param == "experiments":
-#        _GenerateUrls(dataframe, "stats", verbose=verbose)
-#        _GenerateUrls(dataframe, "variations", verbose=verbose)
+    if param == "projects":
+        _GenerateUrls(dataframe, "experiments", verbose=verbose)
+    elif param == "experiments":
+        _GenerateUrls(dataframe, "stats", verbose=verbose)
+        _GenerateUrls(dataframe, "variations", verbose=verbose)
 
     if verbose:
         print(HORIZONTAL_RULE)
