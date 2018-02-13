@@ -113,7 +113,7 @@ def content_to_dataframe(content):
     return pd.concat(dfs)
 
 
-def _GenerateUrls(df, target):
+def _generate_urls(dataframe, target):
     target_url = {
         "experiments" : "https://www.optimizelyapis.com/experiment/v1/projects/{}/experiments/",
         "stats"       : "https://www.optimizelyapis.com/experiment/v1/experiments/{}/stats",
@@ -121,16 +121,16 @@ def _GenerateUrls(df, target):
         }[target]
 
     if target == "variations":
-        ids = [item for sublist in df["variation_ids"] for item in sublist]
+        ids = [item for sublist in dataframe["variation_ids"] for item in sublist]
     else:
-        ids = df["id"]
+        ids = dataframe["id"]
 
     return [target_url.format(i) for i in ids]
 
 
-def GenerateUrlFiles(df, targets, verbose=True):
+def generate_url_files(dataframe, targets, verbose=True):
     for target in targets:
-        urls = _GenerateUrls(df, target)
+        urls = _generate_urls(dataframe, target)
 
         with open("urls/{}.url".format(target), 'w') as f:
             for u in urls:
@@ -173,9 +173,9 @@ def Main(param, verbose=True):
 
 
     if param == "projects":
-        GenerateUrlFiles(dataframe, ["experiments"])
+        generate_url_files(dataframe, ["experiments"])
     elif param == "experiments":
-        GenerateUrlFiles(dataframe, ["stats", "variations"])
+        generate_url_files(dataframe, ["stats", "variations"])
 
     if verbose:
         print(HORIZONTAL_RULE)
