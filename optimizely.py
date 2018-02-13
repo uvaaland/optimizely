@@ -1,9 +1,9 @@
-import asyncio
-import pandas as pd
-from requests import Session
 from json import JSONDecodeError
-from aiohttp import ClientSession, ContentTypeError
 from timeit import default_timer
+import asyncio
+from aiohttp import ClientSession, ContentTypeError
+from requests import Session
+import pandas as pd
 
 
 HEADER = "{0:^80}"
@@ -132,33 +132,33 @@ def generate_url_files(dataframe, targets, verbose=True):
     for target in targets:
         urls = _generate_urls(dataframe, target)
 
-        with open("urls/{}.url".format(target), 'w') as f:
-            for u in urls:
-                f.write(u + '\n')
+        with open("urls/{}.url".format(target), 'w') as outfile:
+            for url in urls:
+                outfile.write(url + '\n')
 
         if verbose:
             print("Saved '{0}' urls to 'urls/{0}.url'.".format(target))
 
 
-def Main(param, verbose=True):
+def main(par, verbose=True):
 
     if verbose:
         print(HORIZONTAL_RULE)
-        print(HEADER.format(param.upper()))
+        print(HEADER.format(par.upper()))
         print(HORIZONTAL_RULE)
 
-    with open("token/token.txt", 'r') as f:
-        token = f.read().rstrip('\n')
+    with open("token/token.txt", 'r') as infile:
+        token = infile.read().rstrip('\n')
 
-    with open("urls/{}.url".format(param), 'r') as f:
-        urls = f.read().splitlines()
+    with open("urls/{}.url".format(par), 'r') as infile:
+        urls = infile.read().splitlines()
 
     responses = get_requests(urls, token, verbose=verbose)
 
     urls_fail = [url for url in urls if responses[url][0] != 200]
-    with open("urls/failures.url", 'w' if param == 'projects' else 'a') as f:
+    with open("urls/failures.url", 'w' if par == 'projects' else 'a') as outfile:
         for url in urls_fail:
-            f.write(url + '\n')
+            outfile.write(url + '\n')
             responses.pop(url, None)
 
     content = [v[1] for v in list(responses.values())]
@@ -166,15 +166,15 @@ def Main(param, verbose=True):
     dataframe = content_to_dataframe(content)
 
     # Write to file
-    dataframe.to_csv("output/{}.csv".format(param), index=False)
+    dataframe.to_csv("output/{}.csv".format(par), index=False)
 
     if verbose:
-        print("Saved '{0}' frame to 'output/{0}.csv'.".format(param))
+        print("Saved '{0}' frame to 'output/{0}.csv'.".format(par))
 
 
-    if param == "projects":
+    if par == "projects":
         generate_url_files(dataframe, ["experiments"])
-    elif param == "experiments":
+    elif par == "experiments":
         generate_url_files(dataframe, ["stats", "variations"])
 
     if verbose:
@@ -182,7 +182,7 @@ def Main(param, verbose=True):
 
 
 if __name__ == "__main__":
-#    parameters = ["projects", "experiments", "stats", "variations"]
-    parameters = ["projects", "experiments"]
-    for param in parameters:
-        Main(param)
+    #PARAMETERS = ["projects", "experiments", "stats", "variations"]
+    PARAMETERS = ["projects", "experiments"]
+    for PAR in PARAMETERS:
+        main(PAR)
