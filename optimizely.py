@@ -1,4 +1,3 @@
-import utils
 import requests
 import asyncio
 import pandas as pd
@@ -67,6 +66,7 @@ def _GetRequestsSync(urls, token, verbose):
 
     return responses
 
+
 def _GetRequests(urls, token, async=False, verbose=True):
     """Takes in a list of urls and a token and makes a request for each url in
     the list. Returns a dictionary with two keys, 'success' and 'failure',
@@ -74,12 +74,20 @@ def _GetRequests(urls, token, async=False, verbose=True):
     failed requests.
     """
 
+    if verbose:
+        print(STATUS_BAR.format("#", "REQUEST (https://www.optimizelyapis.com/...)", "SUCCESS"))
+        print(HORIZONTAL_RULE)
+
+    start_time = default_timer()
     if async:
         responses = _GetRequestsAsync(urls, token, verbose)
     else:
         responses = _GetRequestsSync(urls, token, verbose)
+    elapsed_time = default_timer() - start_time
 
     if verbose:
+        print(HORIZONTAL_RULE)
+        print("Elapsed time: {0:63.2f}s".format(elapsed_time))
         print(HORIZONTAL_RULE)
 
     reqs = {"success":[], "failure":[]}
@@ -102,13 +110,7 @@ def _RequestsToDataframe(reqs, param, verbose=True):
     except ValueError:
         dfs = [pd.DataFrame(r, index=[i]) for i, r in enumerate(reqs)]
 
-    dfs = pd.concat(dfs)
-    dfs.to_csv("output/{}.csv".format(param), index=False)
-    
-    if verbose:
-        print("Saved '{0}' frame to 'output/{0}.csv'.".format(param))
-
-    return dfs
+    return pd.concat(dfs)
 
 
 def _GenerateUrls(df, target, verbose=True):
@@ -139,16 +141,23 @@ def Main(param, verbose=True):
         print(HORIZONTAL_RULE)
         print(HEADER.format(param.upper()))
         print(HORIZONTAL_RULE)
-        print(STATUS_BAR.format("#", "REQUEST (https://www.optimizelyapis.com/...)", "SUCCESS"))
-        print(HORIZONTAL_RULE)
+
+    with open("token/token.txt", 'r') as f:
+        token = f.read().rstrip('\n')
+
+    with open("urls/{}.url".format(param), 'r') as f:
+        urls = f.read().splitlines()
+
+    responses = _GetRequests(urls, token, verbose=verbose)
+    dataframe = _RequestsToDataframe(responses, param, verbose=verbose) 
 
 
-    token = utils.ReadFileToken()
-    urls = utils.ReadFileURL("urls/{}.url".format(param))
+    # Write to file
+    dataframe.to_csv("output/{}.csv".format(param), index=False)
+    
+    if verbose:
+        print("Saved '{0}' frame to 'output/{0}.csv'.".format(param))
 
-
-    reqs = _GetRequests(urls, token, verbose=verbose)
-    dataframe = _RequestsToDataframe(reqs, param, verbose=verbose) 
 
     if param == "projects":
         _GenerateUrls(dataframe, "experiments", verbose=verbose)
@@ -162,7 +171,7 @@ def Main(param, verbose=True):
 
 if __name__ == "__main__":
     #parameters = ["projects", "experiments", "stats", "variations"]
-    parameters = ["projects", "experiments"]
+#    parameters = ["projects", "experiments"]
     parameters = ["experiments"]
     for param in parameters:
         Main(param)
