@@ -1,4 +1,3 @@
-import io
 import asyncio
 import pandas as pd
 from requests import Session
@@ -67,7 +66,7 @@ def _GetRequestsSync(urls, token, verbose):
     return responses
 
 
-def _GetRequests(urls, token, async=False, verbose=True):
+def _GetRequests(urls, token, async=True, verbose=True):
     """Takes in a list of urls and a token and makes a request for each url in
     the list. Returns a dictionary with two keys, 'success' and 'failure',
     which map to lists containing the request objects for the successful and
@@ -171,7 +170,7 @@ def Main(param, verbose=True):
 
 if __name__ == "__main__":
     #parameters = ["projects", "experiments", "stats", "variations"]
-#    parameters = ["projects", "experiments"]
-    parameters = ["experiments"]
+    parameters = ["projects", "experiments"]
+#    parameters = ["experiments"]
     for param in parameters:
         Main(param)
