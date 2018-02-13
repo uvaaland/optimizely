@@ -11,7 +11,7 @@ STATUS_BAR = "{0:^10}{1:^60}{2:^10}"
 HORIZONTAL_RULE = "-"*80
 
 
-async def FetchAll(urls, token):
+async def fetch_all(urls, token):
     """Launch requests for all web pages."""
 
     tasks = []
@@ -19,14 +19,14 @@ async def FetchAll(urls, token):
     i = [0]
     async with ClientSession() as session:
         for url in urls:
-            task = asyncio.ensure_future(Fetch(url, token, session, i, nurls))
+            task = asyncio.ensure_future(fetch(url, token, session, i, nurls))
             tasks.append(task) # create list of tasks
         responses = await asyncio.gather(*tasks) # gather task responses
 
         return responses
 
 
-async def Fetch(url, token, session, i, nurls, verbose=True):
+async def fetch(url, token, session, i, nurls, verbose=True):
     """Fetch a url, using specified ClientSession."""
 
     header = {'Token': token}
@@ -45,35 +45,35 @@ async def Fetch(url, token, session, i, nurls, verbose=True):
         return {url : (status, content)}
 
 
-def _GetRequestsAsync(urls, token, verbose):
+def _get_requests_async(urls, token):
     """Fetch list of web pages asynchronously."""
 
     loop = asyncio.get_event_loop()
-    future = asyncio.ensure_future(FetchAll(urls, token))
+    future = asyncio.ensure_future(fetch_all(urls, token))
     responses = loop.run_until_complete(future)
 
-    return { k : v for d in responses for (k, v) in d.items() }
+    return {k : v for d in responses for (k, v) in d.items()}
 
 
-def _GetRequestsSync(urls, token, verbose):
+def _get_requests_sync(urls, token, verbose):
     """Fetch list of web pages sequentially."""
 
     responses = {}
     session = Session()
     header = {'Token': token}
     for i, url in enumerate(urls):
-        r = session.get(url, headers=header)
+        response = session.get(url, headers=header)
         try:
-            content = r.json()
+            content = response.json()
         except JSONDecodeError:
             content = []
-        status = r.status_code
+        status = response.status_code
 
         responses[url] = (status, content)
 
         if verbose:
             count = "[{0:03}/{1:03}]:".format(i+1, len(urls))
-            print(STATUS_BAR.format(count, ".../" + r.url[31:], str(status == 200)))
+            print(STATUS_BAR.format(count, ".../" + url[31:], str(status == 200)))
 
     return responses
 
@@ -91,9 +91,9 @@ def GetRequests(urls, token, async=False, verbose=True):
 
     start_time = default_timer()
     if async:
-        responses = _GetRequestsAsync(urls, token, verbose)
+        responses = _get_requests_async(urls, token)
     else:
-        responses = _GetRequestsSync(urls, token, verbose)
+        responses = _get_requests_sync(urls, token, verbose)
     elapsed_time = default_timer() - start_time
 
     if verbose:
@@ -101,7 +101,7 @@ def GetRequests(urls, token, async=False, verbose=True):
         print("Elapsed time: {0:63.2f}s".format(elapsed_time))
         print(HORIZONTAL_RULE)
 
-    return responses 
+    return responses
 
 
 def RequestsToDataframe(reqs, param, verbose=True):
@@ -115,10 +115,10 @@ def RequestsToDataframe(reqs, param, verbose=True):
 
 def _GenerateUrls(df, target):
     target_url = {
-                    "experiments" : "https://www.optimizelyapis.com/experiment/v1/projects/{}/experiments/",
-                    "stats"       : "https://www.optimizelyapis.com/experiment/v1/experiments/{}/stats",
-                    "variations"  : "https://www.optimizelyapis.com/experiment/v1/variations/{}"
-                 }[target]
+        "experiments" : "https://www.optimizelyapis.com/experiment/v1/projects/{}/experiments/",
+        "stats"       : "https://www.optimizelyapis.com/experiment/v1/experiments/{}/stats",
+        "variations"  : "https://www.optimizelyapis.com/experiment/v1/variations/{}"
+        }[target]
 
     if target == "variations":
         ids = [item for sublist in df["variation_ids"] for item in sublist]
@@ -129,7 +129,6 @@ def _GenerateUrls(df, target):
 
 
 def GenerateUrlFiles(df, targets, verbose=True):
-    
     for target in targets:
         urls = _GenerateUrls(df, target)
 
@@ -164,12 +163,11 @@ def Main(param, verbose=True):
 
     content = [v[1] for v in list(responses.values())]
 
-
-    dataframe = RequestsToDataframe(content, param, verbose=verbose) 
+    dataframe = RequestsToDataframe(content, param, verbose=verbose)
 
     # Write to file
     dataframe.to_csv("output/{}.csv".format(param), index=False)
-    
+
     if verbose:
         print("Saved '{0}' frame to 'output/{0}.csv'.".format(param))
 
@@ -184,6 +182,7 @@ def Main(param, verbose=True):
 
 
 if __name__ == "__main__":
-    parameters = ["projects", "experiments", "stats", "variations"]
+#    parameters = ["projects", "experiments", "stats", "variations"]
+    parameters = ["projects", "experiments"]
     for param in parameters:
         Main(param)
