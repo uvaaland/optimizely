@@ -1,7 +1,7 @@
-import requests
+import io
 import asyncio
 import pandas as pd
-import io
+from requests import Session
 from aiohttp import ClientSession
 from timeit import default_timer
 
@@ -53,7 +53,7 @@ def _GetRequestsSync(urls, token, verbose):
     """Fetch list of web pages sequentially."""
 
     responses = {}
-    session = requests.Session()
+    session = Session()
     header = {'Token': token}
     for i, url in enumerate(urls):
         r = session.get(url, headers=header)
