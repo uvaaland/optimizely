@@ -78,7 +78,7 @@ def _get_requests_sync(urls, token, verbose):
     return responses
 
 
-def GetRequests(urls, token, async=False, verbose=True):
+def get_requests(urls, token, async=True, verbose=True):
     """Takes in a list of urls and a token and makes a request for each url in
     the list. Returns a dictionary with two keys, 'success' and 'failure',
     which map to lists containing the request objects for the successful and
@@ -104,11 +104,11 @@ def GetRequests(urls, token, async=False, verbose=True):
     return responses
 
 
-def RequestsToDataframe(reqs, param, verbose=True):
+def content_to_dataframe(content):
     try:
-        dfs = [pd.DataFrame(r) for r in reqs]
+        dfs = [pd.DataFrame(c) for c in content]
     except ValueError:
-        dfs = [pd.DataFrame(r, index=[i]) for i, r in enumerate(reqs)]
+        dfs = [pd.DataFrame(c, index=[i]) for i, c in enumerate(content)]
 
     return pd.concat(dfs)
 
@@ -153,7 +153,7 @@ def Main(param, verbose=True):
     with open("urls/{}.url".format(param), 'r') as f:
         urls = f.read().splitlines()
 
-    responses = GetRequests(urls, token, verbose=verbose)
+    responses = get_requests(urls, token, verbose=verbose)
 
     urls_fail = [url for url in urls if responses[url][0] != 200]
     with open("urls/failures.url", 'w' if param == 'projects' else 'a') as f:
@@ -163,7 +163,7 @@ def Main(param, verbose=True):
 
     content = [v[1] for v in list(responses.values())]
 
-    dataframe = RequestsToDataframe(content, param, verbose=verbose)
+    dataframe = content_to_dataframe(content)
 
     # Write to file
     dataframe.to_csv("output/{}.csv".format(param), index=False)
