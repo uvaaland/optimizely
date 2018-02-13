@@ -1,7 +1,8 @@
 import asyncio
 import pandas as pd
 from requests import Session
-from aiohttp import ClientSession
+from json import JSONDecodeError
+from aiohttp import ClientSession, ContentTypeError
 from timeit import default_timer
 
 
@@ -28,7 +29,10 @@ async def Fetch(i, url, token, session, verbose=True):
 
     header = {'Token': token}
     async with session.get(url, headers=header) as response:
-        content = await response.json()
+        try:
+            content = await response.json()
+        except ContentTypeError:
+            content = []
         status = response.status
 
         if verbose:
@@ -61,12 +65,18 @@ def _GetRequestsSync(urls, token, verbose):
             count = "[{0:03}/{1:03}]:".format(i+1, len(urls))
             print(STATUS_BAR.format(count, ".../" + r.url[31:], str(r.ok)))
 
-        responses[url] = (r.status_code, r.json())
+        try:
+            content = r.json()
+        except JSONDecodeError:
+            content = []
+        status = r.status_code
+
+        responses[url] = (status, content)
 
     return responses
 
 
-def _GetRequests(urls, token, async=True, verbose=True):
+def GetRequests(urls, token, async=False, verbose=True):
     """Takes in a list of urls and a token and makes a request for each url in
     the list. Returns a dictionary with two keys, 'success' and 'failure',
     which map to lists containing the request objects for the successful and
@@ -103,7 +113,7 @@ def _GetRequests(urls, token, async=True, verbose=True):
     return reqs["success"]
 
 
-def _RequestsToDataframe(reqs, param, verbose=True):
+def RequestsToDataframe(reqs, param, verbose=True):
     try:
         dfs = [pd.DataFrame(r) for r in reqs]
     except ValueError:
@@ -112,7 +122,7 @@ def _RequestsToDataframe(reqs, param, verbose=True):
     return pd.concat(dfs)
 
 
-def _GenerateUrls(df, target, verbose=True):
+def _GenerateUrls(df, target):
     target_url = {
                     "experiments" : "https://www.optimizelyapis.com/experiment/v1/projects/{}/experiments/",
                     "stats"       : "https://www.optimizelyapis.com/experiment/v1/experiments/{}/stats",
@@ -124,14 +134,20 @@ def _GenerateUrls(df, target, verbose=True):
     else:
         ids = df["id"]
 
-    urls = [target_url.format(i) for i in ids]
-    
-    with open("urls/{}.url".format(target), 'w') as f:
-        for u in urls:
-            f.write(u + '\n')
+    return [target_url.format(i) for i in ids]
 
-    if verbose:
-        print("Saved '{0}' urls to 'urls/{0}.url'.".format(target))
+
+def GenerateUrlFiles(df, targets, verbose=True):
+    
+    for target in targets:
+        urls = _GenerateUrls(df, target)
+
+        with open("urls/{}.url".format(target), 'w') as f:
+            for u in urls:
+                f.write(u + '\n')
+
+        if verbose:
+            print("Saved '{0}' urls to 'urls/{0}.url'.".format(target))
 
 
 def Main(param, verbose=True):
@@ -147,8 +163,8 @@ def Main(param, verbose=True):
     with open("urls/{}.url".format(param), 'r') as f:
         urls = f.read().splitlines()
 
-    responses = _GetRequests(urls, token, verbose=verbose)
-    dataframe = _RequestsToDataframe(responses, param, verbose=verbose) 
+    responses = GetRequests(urls, token, verbose=verbose)
+    dataframe = RequestsToDataframe(responses, param, verbose=verbose) 
 
 
     # Write to file
@@ -159,18 +175,17 @@ def Main(param, verbose=True):
 
 
     if param == "projects":
-        _GenerateUrls(dataframe, "experiments", verbose=verbose)
+        GenerateUrlFiles(dataframe, ["experiments"])
     elif param == "experiments":
-        _GenerateUrls(dataframe, "stats", verbose=verbose)
-        _GenerateUrls(dataframe, "variations", verbose=verbose)
+        GenerateUrlFiles(dataframe, ["stats", "variations"])
 
     if verbose:
         print(HORIZONTAL_RULE)
 
 
 if __name__ == "__main__":
-    #parameters = ["projects", "experiments", "stats", "variations"]
+#    parameters = ["projects", "experiments", "stats", "variations"]
     parameters = ["projects", "experiments"]
-#    parameters = ["experiments"]
+#    parameters = ["stats"]
     for param in parameters:
         Main(param)
