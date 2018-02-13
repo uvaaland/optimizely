@@ -15,16 +15,18 @@ async def FetchAll(urls, token):
     """Launch requests for all web pages."""
 
     tasks = []
+    nurls = len(urls)
+    i = [0]
     async with ClientSession() as session:
-        for i, url in enumerate(urls):
-            task = asyncio.ensure_future(Fetch(i, url, token, session))
+        for url in urls:
+            task = asyncio.ensure_future(Fetch(url, token, session, i, nurls))
             tasks.append(task) # create list of tasks
         responses = await asyncio.gather(*tasks) # gather task responses
 
         return responses
 
 
-async def Fetch(i, url, token, session, verbose=True):
+async def Fetch(url, token, session, i, nurls, verbose=True):
     """Fetch a url, using specified ClientSession."""
 
     header = {'Token': token}
@@ -36,7 +38,8 @@ async def Fetch(i, url, token, session, verbose=True):
         status = response.status
 
         if verbose:
-            count = "[{0:03}/{1:03}]:".format(i+1, 100)
+            i[0] = i[0] + 1
+            count = "[{0:03}/{1:03}]:".format(i[0], nurls)
             print(STATUS_BAR.format(count, ".../" + url[31:], str(status == 200)))
 
         return {url : (status, content)}
@@ -60,11 +63,6 @@ def _GetRequestsSync(urls, token, verbose):
     header = {'Token': token}
     for i, url in enumerate(urls):
         r = session.get(url, headers=header)
-
-        if verbose:
-            count = "[{0:03}/{1:03}]:".format(i+1, len(urls))
-            print(STATUS_BAR.format(count, ".../" + r.url[31:], str(r.ok)))
-
         try:
             content = r.json()
         except JSONDecodeError:
@@ -73,10 +71,15 @@ def _GetRequestsSync(urls, token, verbose):
 
         responses[url] = (status, content)
 
+        if verbose:
+            count = "[{0:03}/{1:03}]:".format(i+1, len(urls))
+            print(STATUS_BAR.format(count, ".../" + r.url[31:], str(status == 200)))
+
+
     return responses
 
 
-def GetRequests(urls, token, async=False, verbose=True):
+def GetRequests(urls, token, async=True, verbose=True):
     """Takes in a list of urls and a token and makes a request for each url in
     the list. Returns a dictionary with two keys, 'success' and 'failure',
     which map to lists containing the request objects for the successful and
