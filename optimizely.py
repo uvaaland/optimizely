@@ -165,49 +165,49 @@ def generate_url_files(dataframe, targets, verbose=True):
             print("Saved '{0}' urls to 'urls/{0}.url'.".format(target))
 
 
-def main(par, verbose=True):
-
-    if verbose:
-        print(HORIZONTAL_RULE)
-        print(HEADER.format(par.upper()))
-        print(HORIZONTAL_RULE)
+def main(verbose=True):
 
     with open("token/token.txt", 'r') as infile:
         token = infile.read().rstrip('\n')
 
-    with open("urls/{}.url".format(par), 'r') as infile:
-        urls = infile.read().splitlines()
+    parameters = ["projects", "experiments", "stats", "variations"]
+#    parameters = ["projects", "experiments"]
+    for par in parameters:
 
-    responses = get_requests(urls, token, verbose=verbose)
+        if verbose:
+            print(HORIZONTAL_RULE)
+            print(HEADER.format(par.upper()))
+            print(HORIZONTAL_RULE)
 
-    urls_fail = [url for url in urls if responses[url][0] != 200]
-    with open("urls/failures.url", 'w' if par == 'projects' else 'a') as outfile:
-        for url in urls_fail:
-            outfile.write(url + '\n')
-            responses.pop(url, None)
-
-    content = [v[1] for v in list(responses.values())]
-
-    dataframe = content_to_dataframe(content)
-
-    # Write to file
-    dataframe.to_csv("output/{}.csv".format(par), index=False)
-
-    if verbose:
-        print("Saved '{0}' frame to 'output/{0}.csv'.".format(par))
-
-
-    if par == "projects":
-        generate_url_files(dataframe, ["experiments"])
-    elif par == "experiments":
-        generate_url_files(dataframe, ["stats", "variations"])
-
-    if verbose:
-        print(HORIZONTAL_RULE)
+        with open("urls/{}.url".format(par), 'r') as infile:
+            urls = infile.read().splitlines()
+    
+        responses = get_requests(urls, token)
+    
+        urls_fail = [url for url in urls if responses[url][0] != 200]
+        with open("urls/failures.url", 'w' if par == 'projects' else 'a') as outfile:
+            for url in urls_fail:
+                outfile.write(url + '\n')
+                responses.pop(url, None)
+    
+        content = [v[1] for v in list(responses.values())]
+    
+        dataframe = content_to_dataframe(content)
+    
+        # Write to file
+        dataframe.to_csv("output/{}.csv".format(par), index=False)
+    
+        if verbose:
+            print("Saved '{0}' frame to 'output/{0}.csv'.".format(par))
+    
+        if par == "projects":
+            generate_url_files(dataframe, ["experiments"])
+        elif par == "experiments":
+            generate_url_files(dataframe, ["stats", "variations"])
+    
+        if verbose:
+            print(HORIZONTAL_RULE)
 
 
 if __name__ == "__main__":
-    #PARAMETERS = ["projects", "experiments", "stats", "variations"]
-    PARAMETERS = ["projects", "experiments"]
-    for PAR in PARAMETERS:
-        main(PAR)
+    main()
