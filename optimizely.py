@@ -140,9 +140,9 @@ def content_to_dataframe(content):
 
 def _generate_urls(dataframe, target):
     target_url = {
-        "experiments" : "https://www.optimizelyapis.com/experiment/v1/projects/{}/experiments/",
-        "stats"       : "https://www.optimizelyapis.com/experiment/v1/experiments/{}/stats",
-        "variations"  : "https://www.optimizelyapis.com/experiment/v1/variations/{}"
+        "experiments" : "experiment/v1/projects/{}/experiments/",
+        "stats"       : "experiment/v1/experiments/{}/stats",
+        "variations"  : "experiment/v1/variations/{}"
         }[target]
 
     if target == "variations":
@@ -150,7 +150,7 @@ def _generate_urls(dataframe, target):
     else:
         ids = dataframe["id"]
 
-    return [target_url.format(i) for i in ids]
+    return ["https://www.optimizelyapis.com/" + target_url.format(i) for i in ids]
 
 
 def generate_url_files(dataframe, targets, verbose=True):
@@ -207,6 +207,7 @@ def main(par, verbose=True):
 
 
 if __name__ == "__main__":
-    PARAMETERS = ["projects", "experiments", "stats", "variations"]
+    #PARAMETERS = ["projects", "experiments", "stats", "variations"]
+    PARAMETERS = ["projects", "experiments"]
     for PAR in PARAMETERS:
         main(PAR)
