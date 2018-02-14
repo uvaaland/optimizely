@@ -40,18 +40,17 @@ async def fetch_all(urls, token):
     """Launch requests for all web pages."""
 
     tasks = []
-    nurls = len(urls)
-    i = [0]
+    tracker = [0, len(urls)]
     async with ClientSession() as session:
         for url in urls:
-            task = asyncio.ensure_future(fetch(url, token, session, i, nurls))
+            task = asyncio.ensure_future(fetch(url, token, session, tracker))
             tasks.append(task) # create list of tasks
         responses = await asyncio.gather(*tasks) # gather task responses
 
         return responses
 
 
-async def fetch(url, token, session, i, nurls, verbose=True):
+async def fetch(url, token, session, tracker, verbose=True):
     """Fetch a url, using specified ClientSession."""
 
     header = {'Token': token}
@@ -63,8 +62,8 @@ async def fetch(url, token, session, i, nurls, verbose=True):
         status = response.status
 
         if verbose:
-            i[0] = i[0] + 1
-            count = "[{0:03}/{1:03}]:".format(i[0], nurls)
+            tracker[0] = tracker[0] + 1
+            count = "[{0:03}/{1:03}]:".format(tracker[0], tracker[1])
             print(STATUS_BAR.format(count, ".../" + url[31:], str(status == 200)))
 
         return {url : (status, content)}
@@ -80,7 +79,7 @@ def _get_requests_async(urls, token):
     return {k : v for d in responses for (k, v) in d.items()}
 
 
-def _get_requests_sync(urls, token, verbose):
+def _get_requests_sync(urls, token, verbose=True):
     """Fetch list of web pages sequentially."""
 
     responses = {}
@@ -118,7 +117,7 @@ def get_requests(urls, token, async=True, verbose=True):
     if async:
         responses = _get_requests_async(urls, token)
     else:
-        responses = _get_requests_sync(urls, token, verbose)
+        responses = _get_requests_sync(urls, token)
     elapsed_time = default_timer() - start_time
 
     if verbose:
@@ -130,6 +129,8 @@ def get_requests(urls, token, async=True, verbose=True):
 
 
 def content_to_dataframe(content):
+    """NEED DESCRIPTION HERE"""
+
     try:
         dfs = [pd.DataFrame(c) for c in content]
     except ValueError:
@@ -139,6 +140,8 @@ def content_to_dataframe(content):
 
 
 def _generate_urls(dataframe, target):
+    """NEED DESCRIPTION HERE"""
+
     target_url = {
         "experiments" : "experiment/v1/projects/{}/experiments/",
         "stats"       : "experiment/v1/experiments/{}/stats",
@@ -154,6 +157,8 @@ def _generate_urls(dataframe, target):
 
 
 def generate_url_files(dataframe, targets, verbose=True):
+    """NEED DESCRIPTION HERE"""
+
     for target in targets:
         urls = _generate_urls(dataframe, target)
 
@@ -166,12 +171,12 @@ def generate_url_files(dataframe, targets, verbose=True):
 
 
 def main(verbose=True):
+    """NEED DESCRIPTION HERE"""
 
     with open("token/token.txt", 'r') as infile:
         token = infile.read().rstrip('\n')
 
     parameters = ["projects", "experiments", "stats", "variations"]
-#    parameters = ["projects", "experiments"]
     for par in parameters:
 
         if verbose:
@@ -181,30 +186,30 @@ def main(verbose=True):
 
         with open("urls/{}.url".format(par), 'r') as infile:
             urls = infile.read().splitlines()
-    
+
         responses = get_requests(urls, token)
-    
+
         urls_fail = [url for url in urls if responses[url][0] != 200]
         with open("urls/failures.url", 'w' if par == 'projects' else 'a') as outfile:
             for url in urls_fail:
                 outfile.write(url + '\n')
                 responses.pop(url, None)
-    
+
         content = [v[1] for v in list(responses.values())]
-    
+
         dataframe = content_to_dataframe(content)
-    
+
         # Write to file
         dataframe.to_csv("output/{}.csv".format(par), index=False)
-    
+
         if verbose:
             print("Saved '{0}' frame to 'output/{0}.csv'.".format(par))
-    
+
         if par == "projects":
             generate_url_files(dataframe, ["experiments"])
         elif par == "experiments":
             generate_url_files(dataframe, ["stats", "variations"])
-    
+
         if verbose:
             print(HORIZONTAL_RULE)
 
