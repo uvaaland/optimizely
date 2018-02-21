@@ -44,8 +44,7 @@ Code for pulling Optimizely data for M4A.
 ```shell
     make pull
 ```
-The whole procedure takes around 20 minutes.
+The whole procedure takes ~2 minutes.
 
-2. Once the procedure has finished, inspect the .log file for a summary. The
-   data can be found as .csv files in the output/ folder.
+2. Once the procedure has finished, the data can be found as .csv files in the output/ folder.
 
