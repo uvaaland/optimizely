@@ -17,6 +17,7 @@ Code for pulling Optimizely data for M4A.
 
 3. Install requirements
 ```shell
+    cd optimizely/
     make init
 ```
 
@@ -39,12 +40,17 @@ Code for pulling Optimizely data for M4A.
 
 ## PULL OPTIMIZELY DATA
 
-1. Once the token has been set up, we can pull the project, experiment, stats
+1. If there is no output folder, create this before pulling the data
+```shell
+    mkdir output/
+```
+
+2. Once the token has been set up, we can pull the project, experiment, stats
    and variation data
 ```shell
     make pull
 ```
-The whole procedure takes ~2 minutes.
+The whole procedure takes ~1 minute.
 
-2. Once the procedure has finished, the data can be found as .csv files in the output/ folder.
+3. Once the procedure has finished, the data can be found as .csv files in the output/ folder.
 
