@@ -31,13 +31,28 @@ from requests import Session
 import pandas as pd
 
 
+# Print formatting
 HEADER = "{0:^80}"
 STATUS_BAR = "{0:^10}{1:^60}{2:^10}"
 HORIZONTAL_RULE = "-"*80
 
 
 async def fetch_all(urls, token):
-    """Launch requests for all web pages."""
+    """Launch requests for all web pages.
+    
+    Takes in a list of urls and a token and asynchronously launches a request
+    for each url in the list with the given token.
+
+    Args:
+        urls: A list of all the urls to be fetched.
+        token: A string with token that is needed to make requests.
+
+    Returns:
+        A dictionary that maps url keys to a tuple containing the status and
+        json content of the corresponding request. For example:
+
+        {"https://example.com" : (200, [{"name" : "John", "city" : "New York"};])
+    """
 
     tasks = []
     tracker = [0, len(urls)]
@@ -51,7 +66,22 @@ async def fetch_all(urls, token):
 
 
 async def fetch(url, token, session, tracker, verbose=True):
-    """Fetch a url, using specified ClientSession."""
+    """Fetch a url, using specified ClientSession.
+    
+    ---
+
+    Args:
+        url: A string containing a web page address.
+        token: A string with token that is needed to make requests.
+        session: A ClientSession object used to make requests.
+        tracker: A list containing the current iteration and the total number
+            of iterations.
+        verbose: Optional argument for printing progress to terminal.
+
+    Returns:
+        A dictionary that maps the url to a tuple containing the request status
+        and a list of the json content of said request.
+    """
 
     header = {'Token': token}
     async with session.get(url, headers=header) as response:
@@ -70,7 +100,21 @@ async def fetch(url, token, session, tracker, verbose=True):
 
 
 def _get_requests_async(urls, token):
-    """Fetch list of web pages asynchronously."""
+    """Fetch list of web pages asynchronously.
+    
+    Fetches a list of web pages asynchronously and extracts the request status
+    and json content which is mapped to the url in a dictionary.
+
+    Args:
+        urls: A list of web pages.
+        token: A string with token that is needed to make requests.
+
+    Returns:
+        A dictionary that maps url keys to a tuple containing the status and
+        json content of the corresponding request. For example:
+
+        {"https://example.com" : (200, [{"name" : "John", "city" : "New York"};])
+    """
 
     loop = asyncio.get_event_loop()
     future = asyncio.ensure_future(fetch_all(urls, token))
@@ -80,7 +124,22 @@ def _get_requests_async(urls, token):
 
 
 def _get_requests_sync(urls, token, verbose=True):
-    """Fetch list of web pages sequentially."""
+    """Fetch list of web pages sequentially.
+    
+    Fetches a list of web pages sequentially and extracts the request status
+    and json content which is mapped to the url in a dictionary.
+
+    Args:
+        urls: A list of web pages.
+        token: A string with token that is needed to make requests.
+        verbose: Optional argument for printing progress to terminal.
+
+    Returns:
+        A dictionary that maps url keys to a tuple containing the status and
+        json content of the corresponding request. For example:
+
+        {"https://example.com" : (200, [{"name" : "John", "city" : "New York"};])
+    """
 
     responses = {}
     session = Session()
@@ -103,10 +162,23 @@ def _get_requests_sync(urls, token, verbose=True):
 
 
 def get_requests(urls, token, async=True, verbose=True):
-    """Takes in a list of urls and a token and makes a request for each url in
-    the list. Returns a dictionary with two keys, 'success' and 'failure',
-    which map to lists containing the request objects for the successful and
-    failed requests.
+    """Launches the fetching of web pages in either asynchronous or sequential mode.
+
+    Takes in a list of web pages and a token and launches a routine for
+    fetching the web pages which can be asyncronous or sequential, depending on
+    the async parameter.
+
+    Args:
+        urls: A list of web pages.
+        token: A string with token that is needed to make requests.
+        async: Optional argument for running in asynchronous mode.
+        verbose: Optional argument for printing progress to terminal.
+
+    Returns:
+        A dictionary that maps url keys to a tuple containing the status and
+        json content of the corresponding request. For example:
+
+        {"https://example.com" : (200, [{"name" : "John", "city" : "New York"};])
     """
 
     if verbose:
@@ -129,7 +201,17 @@ def get_requests(urls, token, async=True, verbose=True):
 
 
 def content_to_dataframe(content):
-    """NEED DESCRIPTION HERE"""
+    """Converts a list of json data to a dataframe.
+    
+    Takes a list of json data and converts each element to a dataframe. Then
+    concatenates all the dataframes to a single dataframe and returns.
+
+    Args:
+        content: A list of json data.
+
+    Returns:
+        A single dataframe containing all the data in the input json list.
+    """
 
     try:
         dfs = [pd.DataFrame(c) for c in content]
@@ -140,7 +222,19 @@ def content_to_dataframe(content):
 
 
 def _generate_urls(dataframe, target):
-    """NEED DESCRIPTION HERE"""
+    """Generates a list of urls based on data from the dataframe.
+
+    Takes in a dataframe and a target for which urls will be generated. Chooses
+    a url extension and ids based on the given target and formats the output
+    urls accordingly.
+
+    Args:
+        dataframe: A dataframe containing information from a set of web pages.
+        target: A string with the name for which urls should be generated.
+
+    Returns:
+        A list of urls formatted according to the given target.
+    """
 
     target_url = {
         "experiments" : "experiment/v1/projects/{}/experiments/",
@@ -157,7 +251,21 @@ def _generate_urls(dataframe, target):
 
 
 def generate_url_files(dataframe, targets, verbose=True):
-    """NEED DESCRIPTION HERE"""
+    """Writes a file of urls for the given targets.
+    
+    Takes in a dataframe and a list of targets and generates a url file for
+    each of the targets based on the information in the dataframe. The output
+    url file can be found in the urls/ folder.
+
+    Args:
+        dataframe: A dataframe containing information from a set of web pages.
+        targets: A list of strings with the name for which a url file should be
+            generated.
+        verbose: Optional argument for printing progress to terminal.
+
+    Returns:
+        None
+    """
 
     for target in targets:
         urls = _generate_urls(dataframe, target)
@@ -171,7 +279,19 @@ def generate_url_files(dataframe, targets, verbose=True):
 
 
 def main(verbose=True):
-    """NEED DESCRIPTION HERE"""
+    """Pulls data for every project, experiment, stat, and variation and writes
+    it to file.
+    
+    Loops through all the projects, experiments, stats, and variations and
+    pulls down data from the optimizely web pages. The data is stored as .csv
+    files and can be found in the output/ folder.
+
+    Args:
+        verbose: Optional argument for printing progress to terminal.
+
+    Returns:
+        None
+    """
 
     with open("token/token.txt", 'r') as infile:
         token = infile.read().rstrip('\n')
