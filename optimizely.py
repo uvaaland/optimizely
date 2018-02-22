@@ -39,7 +39,7 @@ HORIZONTAL_RULE = "-"*80
 
 async def fetch_all(urls, token):
     """Launch requests for all web pages.
-    
+
     Takes in a list of urls and a token and asynchronously launches a request
     for each url in the list with the given token.
 
@@ -66,9 +66,11 @@ async def fetch_all(urls, token):
 
 
 async def fetch(url, token, session, tracker, verbose=True):
-    """Fetch a url, using specified ClientSession.
-    
-    ---
+    """Fetch a url asynchronously, using specified ClientSession.
+
+    Makes a request for the given url and extracts status and json content of
+    the request asynchronously. Stores the status and json content in
+    a dictionary that maps it to the corresponding url.
 
     Args:
         url: A string containing a web page address.
@@ -101,7 +103,7 @@ async def fetch(url, token, session, tracker, verbose=True):
 
 def _get_requests_async(urls, token):
     """Fetch list of web pages asynchronously.
-    
+
     Fetches a list of web pages asynchronously and extracts the request status
     and json content which is mapped to the url in a dictionary.
 
@@ -125,7 +127,7 @@ def _get_requests_async(urls, token):
 
 def _get_requests_sync(urls, token, verbose=True):
     """Fetch list of web pages sequentially.
-    
+
     Fetches a list of web pages sequentially and extracts the request status
     and json content which is mapped to the url in a dictionary.
 
@@ -202,7 +204,7 @@ def get_requests(urls, token, async=True, verbose=True):
 
 def content_to_dataframe(content):
     """Converts a list of json data to a dataframe.
-    
+
     Takes a list of json data and converts each element to a dataframe. Then
     concatenates all the dataframes to a single dataframe and returns.
 
@@ -252,7 +254,7 @@ def _generate_urls(dataframe, target):
 
 def generate_url_files(dataframe, targets, verbose=True):
     """Writes a file of urls for the given targets.
-    
+
     Takes in a dataframe and a list of targets and generates a url file for
     each of the targets based on the information in the dataframe. The output
     url file can be found in the urls/ folder.
@@ -281,7 +283,7 @@ def generate_url_files(dataframe, targets, verbose=True):
 def main(verbose=True):
     """Pulls data for every project, experiment, stat, and variation and writes
     it to file.
-    
+
     Loops through all the projects, experiments, stats, and variations and
     pulls down data from the optimizely web pages. The data is stored as .csv
     files and can be found in the output/ folder.
