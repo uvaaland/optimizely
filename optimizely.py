@@ -34,11 +34,9 @@ import pandas as pd
 
 
 # Print formatting
-HEADER = "{0:^80}"
+HEADER = "{1}{0:^78}{1}"
 STATUS_BAR = "{0:^10}{1:^60}{2:^10}"
-HORIZONTAL_RULE = "-"*80
-HORIZONTAL_STAR = "*"*80
-HORIZONTAL_DASH = "#"*80
+HORIZONTAL_RULE = "{0}"*80
 
 
 class Logger:
@@ -47,17 +45,17 @@ class Logger:
         self.terminal = sys.stdout
         self.log = open("{}.log".format(time.strftime("%Y-%m-%d")), "a")
         self.elapsed = {
-                "projects"    : 0.0,
-                "experiments" : 0.0,
-                "stats"       : 0.0,
-                "variations"  : 0.0
-                }
+            "projects"    : 0.0,
+            "experiments" : 0.0,
+            "stats"       : 0.0,
+            "variations"  : 0.0
+        }
         self.request_status = {
-                "projects"    : (0, 0),
-                "experiments" : (0, 0),
-                "stats"       : (0, 0),
-                "variations"  : (0, 0)
-                }
+            "projects"    : (0, 0),
+            "experiments" : (0, 0),
+            "stats"       : (0, 0),
+            "variations"  : (0, 0)
+        }
 
     def write(self, message):
         self.terminal.write(message)
@@ -295,6 +293,46 @@ def generate_url_files(dataframe, targets):
         print("Saved '{0}' urls to 'urls/{0}.url'.".format(target))
 
 
+def write_summary(logger):
+
+    print(HORIZONTAL_RULE.format('*'))
+    print(HEADER.format("SUMMARY", '*'))
+    print(HORIZONTAL_RULE.format('*'))
+    print()
+
+    print(HORIZONTAL_RULE.format('-'))
+    print(HEADER.format("SUCCESSFUL REQUESTS", ' '))
+    print(HORIZONTAL_RULE.format('-'))
+
+    total_success = 0
+    total_attempt = 0
+    for key, value in logger.request_status.items():
+        print("{0:<70}[{1:03}/{2:03}]".format(key, value[0], value[1]))
+        total_success += value[0]
+        total_attempt += value[1]
+
+    print(HORIZONTAL_RULE.format('-'))
+    print("{0:<70}[{1:03}/{2:03}]".format("Total:", total_success, total_attempt))
+    print()
+
+    print(HORIZONTAL_RULE.format('-'))
+    print(HEADER.format("ELAPSED TIME", ' '))
+    print(HORIZONTAL_RULE.format('-'))
+
+    total_elapsed = 0.0
+    for key, value in logger.elapsed.items():
+        print("{0:14}{1:63.2f}s".format(key, value))
+        total_elapsed += value
+
+    print(HORIZONTAL_RULE.format('-'))
+    print("{0:14}{1:63.2f}s".format("Total:", total_elapsed))
+    print('\n')
+
+    print(HORIZONTAL_RULE.format('*'))
+    print(HEADER.format("END SUMMARY", '*'))
+    print(HORIZONTAL_RULE.format('*'))
+
+
 def main():
     """Pulls data for every project, experiment, stat, and variation and writes
     it to file.
@@ -310,43 +348,49 @@ def main():
         None
     """
 
-    print()
-    print(HORIZONTAL_DASH)
-    print(HEADER.format("OPTIMIZELY"))
-    print(HORIZONTAL_DASH)
-    print()
+    print('\n')
+    print(HORIZONTAL_RULE.format('#'))
+    print(HEADER.format("OPTIMIZELY", '#'))
+    print(HORIZONTAL_RULE.format('#'))
+    print('\n')
 
     logger = Logger()
 
     with open("token/token.txt", 'r') as infile:
         token = infile.read().rstrip('\n')
 
-    #parameters = ["projects", "experiments", "stats", "variations"]
-    parameters = ["projects", "experiments"]
+    targets = {
+        "projects"    : ["experiments"],
+        "experiments" : ["stats", "variations"],
+        "stats"       : [],
+        "variations"  : []
+    }
+
+    parameters = ["projects", "experiments", "stats", "variations"]
+#    parameters = ["projects", "experiments"]
     for par in parameters:
 
         start_time = default_timer()
 
         # Print status
-        print(HORIZONTAL_RULE)
-        print(HEADER.format(par.upper()))
-        print(HORIZONTAL_RULE)
+        print(HORIZONTAL_RULE.format('-'))
+        print(HEADER.format(par.upper(), ' '))
+        print(HORIZONTAL_RULE.format('-'))
+        print(STATUS_BAR.format("#", "REQUEST (https://www.optimizelyapis.com/...)", "SUCCESS"))
+        print(HORIZONTAL_RULE.format('-'))
 
         with open("urls/{}.url".format(par), 'r') as infile:
             urls = infile.read().splitlines()
 
-        # Print status
-        print(STATUS_BAR.format("#", "REQUEST (https://www.optimizelyapis.com/...)", "SUCCESS"))
-        print(HORIZONTAL_RULE)
+#        print(STATUS_BAR.format("#", "REQUEST (https://www.optimizelyapis.com/...)", "SUCCESS"))
+#        print(HORIZONTAL_RULE.format('-'))
 
         responses = get_requests(urls, token)
 
-        # Print status
-        print(HORIZONTAL_RULE)
+#        print(HORIZONTAL_RULE.format('-'))
 
         urls_fail = [url for url in urls if responses[url][0] != 200]
         logger.request_status[par] = (len(urls)-len(urls_fail), len(urls))
-
         with open("urls/failures.url", 'w' if par == 'projects' else 'a') as outfile:
             for url in urls_fail:
                 outfile.write(url + '\n')
@@ -360,53 +404,17 @@ def main():
         dataframe.to_csv("output/{}.csv".format(par), index=False)
 
         # Print status
-        print("Saved '{0}' frame to 'output/{0}.csv'.".format(par))
+#        print("Saved '{0}' frame to 'output/{0}.csv'.".format(par))
 
-        if par == "projects":
-            generate_url_files(dataframe, ["experiments"])
-        elif par == "experiments":
-            generate_url_files(dataframe, ["stats", "variations"])
+        generate_url_files(dataframe, targets[par])
 
         logger.elapsed[par] = default_timer() - start_time
 
-    # Print status
-    print()
-    print(HORIZONTAL_STAR)
-    print(HEADER.format("SUMMARY"))
-    print(HORIZONTAL_STAR)
-    print()
+        print(HORIZONTAL_RULE.format('-'))
+        print("Saved '{0}' frame to 'output/{0}.csv'.".format(par))
+        print('\n')
 
-    print(HORIZONTAL_RULE)
-    print(HEADER.format("SUCCESSFUL REQUESTS"))
-    print(HORIZONTAL_RULE)
-
-    total_success = 0
-    total_attempt = 0
-    for key, value in logger.request_status.items():
-        print("{0:<70}[{1:03}/{2:03}]".format(key, value[0], value[1]))
-        total_success += value[0]
-        total_attempt += value[1]
-
-    print(HORIZONTAL_RULE)
-    print("{0:<70}[{1:03}/{2:03}]".format("Total:", total_success, total_attempt))
-    print()
-
-    print(HORIZONTAL_RULE)
-    print(HEADER.format("ELAPSED TIME"))
-    print(HORIZONTAL_RULE)
-
-    total_elapsed = 0.0
-    for key, value in logger.elapsed.items():
-        print("{0:14}{1:63.2f}s".format(key, value))
-        total_elapsed += value
-
-    print(HORIZONTAL_RULE)
-    print("{0:14}{1:63.2f}s".format("Total:", total_elapsed))
-    print()
-
-    print(HORIZONTAL_STAR)
-    print(HEADER.format("END SUMMARY"))
-    print(HORIZONTAL_STAR)
+    write_summary(logger)
 
 if __name__ == "__main__":
     main()
