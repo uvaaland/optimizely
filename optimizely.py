@@ -196,21 +196,10 @@ def get_requests(urls, token, async=True):
         {"https://example.com" : (200, [{"name" : "John", "city" : "New York"};])
     """
 
-    # Print status
-    print(STATUS_BAR.format("#", "REQUEST (https://www.optimizelyapis.com/...)", "SUCCESS"))
-    print(HORIZONTAL_RULE)
-
-    start_time = default_timer()
     if async:
         responses = _get_requests_async(urls, token)
     else:
         responses = _get_requests_sync(urls, token)
-    elapsed_time = default_timer() - start_time
-
-    # Print status
-    print(HORIZONTAL_RULE)
-    print("Elapsed time: {0:63.2f}s".format(elapsed_time))
-    print(HORIZONTAL_RULE)
 
     return responses
 
@@ -307,14 +296,14 @@ def main():
         None
     """
 
-    logger = Logger()
-    sys.stdout = logger
-
     with open("token/token.txt", 'r') as infile:
         token = infile.read().rstrip('\n')
 
-    parameters = ["projects", "experiments", "stats", "variations"]
+    #parameters = ["projects", "experiments", "stats", "variations"]
+    parameters = ["projects", "experiments"]
     for par in parameters:
+
+        start_time = default_timer()
 
         # Print status
         print(HORIZONTAL_RULE)
@@ -324,7 +313,14 @@ def main():
         with open("urls/{}.url".format(par), 'r') as infile:
             urls = infile.read().splitlines()
 
+        # Print status
+        print(STATUS_BAR.format("#", "REQUEST (https://www.optimizelyapis.com/...)", "SUCCESS"))
+        print(HORIZONTAL_RULE)
+
         responses = get_requests(urls, token)
+
+        # Print status
+        print(HORIZONTAL_RULE)
 
         urls_fail = [url for url in urls if responses[url][0] != 200]
         with open("urls/failures.url", 'w' if par == 'projects' else 'a') as outfile:
@@ -347,7 +343,11 @@ def main():
         elif par == "experiments":
             generate_url_files(dataframe, ["stats", "variations"])
 
+        elapsed_time = default_timer() - start_time
+
         # Print status
+        print(HORIZONTAL_RULE)
+        print("Elapsed time: {0:63.2f}s".format(elapsed_time))
         print(HORIZONTAL_RULE)
 
 
