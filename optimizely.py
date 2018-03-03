@@ -333,6 +333,33 @@ def write_summary(logger):
     print(HORIZONTAL_RULE.format('*'))
 
 
+def write_loop_end(par, targets):
+    print(HORIZONTAL_RULE.format('-'))
+    print("Saved '{0}' frame to 'output/{0}.csv'.".format(par))
+    for target in targets[par]:
+        print("Saved '{0}' urls to 'urls/{0}.url'.".format(target))
+    print('\n')
+
+
+def write_loop_start(par):
+    print(HORIZONTAL_RULE.format('-'))
+    print(HEADER.format(par.upper(), ' '))
+    print(HORIZONTAL_RULE.format('-'))
+
+    print(STATUS_BAR.format("#", "REQUEST (https://www.optimizelyapis.com/...)", "SUCCESS"))
+    print(HORIZONTAL_RULE.format('-'))
+
+
+
+def write_program_start():
+    print('\n')
+    print(HORIZONTAL_RULE.format('#'))
+    print(HEADER.format("OPTIMIZELY", '#'))
+    print(HORIZONTAL_RULE.format('#'))
+    print('\n')
+
+
+
 def main():
     """Pulls data for every project, experiment, stat, and variation and writes
     it to file.
@@ -348,11 +375,7 @@ def main():
         None
     """
 
-    print('\n')
-    print(HORIZONTAL_RULE.format('#'))
-    print(HEADER.format("OPTIMIZELY", '#'))
-    print(HORIZONTAL_RULE.format('#'))
-    print('\n')
+    write_program_start()
 
     logger = Logger()
 
@@ -366,28 +389,18 @@ def main():
         "variations"  : []
     }
 
-    parameters = ["projects", "experiments", "stats", "variations"]
-#    parameters = ["projects", "experiments"]
+#    parameters = ["projects", "experiments", "stats", "variations"]
+    parameters = ["projects", "experiments"]
     for par in parameters:
 
-        start_time = default_timer()
+        write_loop_start(par)
 
-        # Print status
-        print(HORIZONTAL_RULE.format('-'))
-        print(HEADER.format(par.upper(), ' '))
-        print(HORIZONTAL_RULE.format('-'))
-        print(STATUS_BAR.format("#", "REQUEST (https://www.optimizelyapis.com/...)", "SUCCESS"))
-        print(HORIZONTAL_RULE.format('-'))
+        start_time = default_timer()
 
         with open("urls/{}.url".format(par), 'r') as infile:
             urls = infile.read().splitlines()
 
-#        print(STATUS_BAR.format("#", "REQUEST (https://www.optimizelyapis.com/...)", "SUCCESS"))
-#        print(HORIZONTAL_RULE.format('-'))
-
         responses = get_requests(urls, token)
-
-#        print(HORIZONTAL_RULE.format('-'))
 
         urls_fail = [url for url in urls if responses[url][0] != 200]
         logger.request_status[par] = (len(urls)-len(urls_fail), len(urls))
@@ -403,10 +416,6 @@ def main():
         # Write to file
         dataframe.to_csv("output/{}.csv".format(par), index=False)
 
-        # Print status
-#        print("Saved '{0}' frame to 'output/{0}.csv'.".format(par))
-
-#        generate_url_files(dataframe, targets[par])
         for target in targets[par]:
             urls = _generate_urls(dataframe, target)
     
@@ -414,14 +423,9 @@ def main():
                 for url in urls:
                     outfile.write(url + '\n')
 
-            # Print status
-            print("Saved '{0}' urls to 'urls/{0}.url'.".format(target))
-
         logger.elapsed[par] = default_timer() - start_time
 
-        print(HORIZONTAL_RULE.format('-'))
-        print("Saved '{0}' frame to 'output/{0}.csv'.".format(par))
-        print('\n')
+        write_loop_end(par, targets)
 
     write_summary(logger)
 
