@@ -406,7 +406,16 @@ def main():
         # Print status
 #        print("Saved '{0}' frame to 'output/{0}.csv'.".format(par))
 
-        generate_url_files(dataframe, targets[par])
+#        generate_url_files(dataframe, targets[par])
+        for target in targets[par]:
+            urls = _generate_urls(dataframe, target)
+    
+            with open("urls/{}.url".format(target), 'w') as outfile:
+                for url in urls:
+                    outfile.write(url + '\n')
+
+            # Print status
+            print("Saved '{0}' urls to 'urls/{0}.url'.".format(target))
 
         logger.elapsed[par] = default_timer() - start_time
 
