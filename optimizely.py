@@ -26,11 +26,11 @@ SOFTWARE.
 from json import JSONDecodeError
 from timeit import default_timer
 import asyncio
+import time
+import sys
 from aiohttp import ClientSession, ContentTypeError
 from requests import Session
 import pandas as pd
-import time
-import sys
 
 
 # Print formatting
@@ -44,7 +44,7 @@ class Logger:
     def __init__(self):
         self.terminal = sys.stdout
         self.log = open("{}.log".format(time.strftime("%Y-%m-%d")), "a")
-        
+
     def write(self, message):
         self.terminal.write(message)
         self.log.write(message)
