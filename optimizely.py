@@ -389,40 +389,60 @@ def main():
         "variations"  : []
     }
 
-#    parameters = ["projects", "experiments", "stats", "variations"]
-    parameters = ["projects", "experiments"]
+    parameters = ["projects", "experiments", "stats", "variations"]
+#    parameters = ["projects", "experiments"]
     for par in parameters:
+
+        urls_in = []
+        urls_fail = []
+        urls_out = {}
 
         write_loop_start(par)
 
         start_time = default_timer()
 
         with open("urls/{}.url".format(par), 'r') as infile:
-            urls = infile.read().splitlines()
+            urls_in = infile.read().splitlines()
 
-        responses = get_requests(urls, token)
+        responses = get_requests(urls_in, token)
 
-        urls_fail = [url for url in urls if responses[url][0] != 200]
-        logger.request_status[par] = (len(urls)-len(urls_fail), len(urls))
-        with open("urls/failures.url", 'w' if par == 'projects' else 'a') as outfile:
-            for url in urls_fail:
-                outfile.write(url + '\n')
+        for url in urls_in:
+            if responses[url][0] != 200:
                 responses.pop(url, None)
+                urls_fail.append(url)
+
+#        urls_fail = [url for url in urls if responses[url][0] != 200]
+#        logger.request_status[par] = (len(urls)-len(urls_fail), len(urls))
+#        with open("urls/failures.url", 'w' if par == 'projects' else 'a') as outfile:
+#            for url in urls_fail:
+#                outfile.write(url + '\n')
+#                responses.pop(url, None)
 
         content = [v[1] for v in list(responses.values())]
 
         dataframe = content_to_dataframe(content)
 
-        # Write to file
+        for target in targets[par]:
+            urls_out[target] = _generate_urls(dataframe, target)
+    
+#            with open("urls/{}.url".format(target), 'w') as outfile:
+#                for url in urls_out:
+#                    outfile.write(url + '\n')
+
+        # Write to files
         dataframe.to_csv("output/{}.csv".format(par), index=False)
 
-        for target in targets[par]:
-            urls = _generate_urls(dataframe, target)
-    
+        with open("urls/failures.url", 'w' if par == 'projects' else 'a') as outfile:
+            for url in urls_fail:
+                outfile.write(url + '\n')
+
+        for target in urls_out:
             with open("urls/{}.url".format(target), 'w') as outfile:
-                for url in urls:
+                for url in urls_out[target]:
                     outfile.write(url + '\n')
 
+        # Update logger
+        logger.request_status[par] = (len(responses), len(urls_in))
         logger.elapsed[par] = default_timer() - start_time
 
         write_loop_end(par, targets)
