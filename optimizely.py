@@ -290,44 +290,28 @@ def write_program_end(log):
     print(HORIZONTAL_RULE.format('*'))
     print()
 
-    total_success = 0
-    total_attempt = 0
-    for key, value in log.pulled.items():
-        print("{0:<70}[{1:03}/{2:03}]".format(key, value[0], value[1]))
-        total_success += value[0]
-        total_attempt += value[1]
-
-    print(HORIZONTAL_RULE.format('-'))
-    print("{0:<70}[{1:03}/{2:03}]".format("Total:", total_success, total_attempt))
-    print()
-
-    total_elapsed = 0.0
-    for key, value in log.elapsed.items():
-        print("{0:14}{1:63.2f}s".format(key, value))
-        total_elapsed += value
-
-    print(HORIZONTAL_RULE.format('-'))
-    print("{0:14}{1:63.2f}s".format("Total:", total_elapsed))
-    print('\n')
-
-    total_success = 0
-    total_attempt = 0
-    total_elapsed = 0.0
-    print("{0:<10}{1:^62}{2:^}".format("parameter", "time(s)", "data"))
+    t_success = 0
+    t_attempt = 0
+    t_elapsed = 0.0
+    print("{0:<15}{1:^50}{2:^15}".format("Parameter", "Elapsed", "Pulled"))
     print(HORIZONTAL_RULE.format('-'))
     for key in log.elapsed:
-        total_success += log.pulled[key][0]
-        total_attempt += log.pulled[key][1]
-        total_elapsed += log.elapsed[key]
+        success = log.pulled[key][0]
+        attempt = log.pulled[key][1]
+        pulled = "{0} of {1}".format(success, attempt)
+        elapsed = log.elapsed[key]
 
-    print(HORIZONTAL_RULE.format('-'))
-    print("{0:<10}{1:^60.2f}{2} of {3}".format("Total:", total_elapsed,
-        total_success, total_attempt))
+        print("{0:<15}{1:^50.2f}{2:^15}".format(key, elapsed, pulled))
+
+        t_success += success
+        t_attempt += attempt
+        t_elapsed += elapsed
+
+    print(HORIZONTAL_RULE.format('='))
+    t_pulled = "{0} of {1}".format(t_success, t_attempt)
+    print("{0:<15}{1:^50.2f}{2:^15}".format("Total", t_elapsed, t_pulled))
     print()
 
-
-    print(HORIZONTAL_RULE.format('*'))
-    print(HEADER.format("END SUMMARY", '*'))
     print(HORIZONTAL_RULE.format('*'))
 
 
