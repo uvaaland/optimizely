@@ -104,18 +104,21 @@ async def fetch(url, token, session, tracker):
 
     header = {'Token': token}
     async with session.get(url, headers=header) as response:
+        status = response.status
         try:
             content = await response.json()
         except ContentTypeError:
-            content = []
-        status = response.status
+            if status == 200:
+                content = []
+            else:
+                content = None
 
         # Print status
         tracker[0] = tracker[0] + 1
         count = "[{0:03}/{1:03}]:".format(tracker[0], tracker[1])
         print(STATUS_BAR.format(count, ".../" + url[31:], str(status == 200)))
 
-        return {url : (status, content)}
+        return {url : content}
 
 
 def _get_requests_async(urls, token):
@@ -167,10 +170,10 @@ def _get_requests_sync(urls, token):
         try:
             content = response.json()
         except JSONDecodeError:
-            content = []
+            content = None
         status = response.status_code
 
-        responses[url] = (status, content)
+        responses[url] =  content
 
         # Print status
         count = "[{0:03}/{1:03}]:".format(i+1, len(urls))
@@ -179,7 +182,7 @@ def _get_requests_sync(urls, token):
     return responses
 
 
-def get_requests(urls, token, async=True):
+def get_data(par, token, log, async=True):
     """Launches the fetching of web pages in either asynchronous or sequential mode.
 
     Takes in a list of web pages and a token and launches a routine for
@@ -197,16 +200,28 @@ def get_requests(urls, token, async=True):
 
         {"https://example.com" : (200, [{"name" : "John", "city" : "New York"};])
     """
+    
+    with open("urls/{}.url".format(par), 'r') as infile:
+        urls = infile.read().splitlines()
 
     if async:
         responses = _get_requests_async(urls, token)
     else:
         responses = _get_requests_sync(urls, token)
+        
+    urls_fail = []
+    for url in urls:
+        if responses[url] == None:
+            responses.pop(url, None)
+            urls_fail.append(url)
 
-    return responses
+    data = _content_to_dataframe(list(responses.values()))
+    log.pulled[par] = (len(responses), len(urls))
+
+    return data
 
 
-def content_to_dataframe(content):
+def _content_to_dataframe(content):
     """Converts a list of json data to a dataframe.
 
     Takes a list of json data and converts each element to a dataframe. Then
@@ -369,46 +384,33 @@ def main():
         "variations"  : []
     }
 
-    #parameters = ["projects", "experiments", "stats", "variations"]
-    parameters = ["projects", "experiments"]
+    parameters = ["projects", "experiments", "stats", "variations"]
     for par in parameters:
 
         write_loop_start(par)
 
         start_time = default_timer()
 
-        with open("urls/{}.url".format(par), 'r') as infile:
-            urls_in = infile.read().splitlines()
+        data = get_data(par, token, log)
+        data.to_csv("output/{}.csv".format(par), index=False)
 
-        responses = get_requests(urls_in, token)
+        generate_url_files(data, targets[par])
 
-        urls_fail = []
-        for url in urls_in:
-            if responses[url][0] != 200:
-                responses.pop(url, None)
-                urls_fail.append(url)
+#        urls_out = {}
+#        for target in targets[par]:
+#            urls_out[target] = _generate_urls(data, target)
 
-        json_content = [v[1] for v in list(responses.values())]
-        dataframe = content_to_dataframe(json_content)
 
-        urls_out = {}
-        for target in targets[par]:
-            urls_out[target] = _generate_urls(dataframe, target)
+#        with open("urls/failures.url", 'w' if par == 'projects' else 'a') as outfile:
+#            for url in urls_fail:
+#                outfile.write(url + '\n')
 
-        dataframe.to_csv("output/{}.csv".format(par), index=False)
+#        for target in urls_out:
+#            with open("urls/{}.url".format(target), 'w') as outfile:
+#                for url in urls_out[target]:
+#                    outfile.write(url + '\n')
 
-        with open("urls/failures.url", 'w' if par == 'projects' else 'a') as outfile:
-            for url in urls_fail:
-                outfile.write(url + '\n')
 
-        for target in urls_out:
-            with open("urls/{}.url".format(target), 'w') as outfile:
-                for url in urls_out[target]:
-                    outfile.write(url + '\n')
-
-        elapsed_time = default_timer() - start_time
-
-        log.pulled[par] = (len(responses), len(urls_in))
         log.elapsed[par] = default_timer() - start_time
 
         write_loop_end(par, targets)
