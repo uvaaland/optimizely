@@ -293,7 +293,7 @@ def generate_url_files(dataframe, targets):
         print("Saved '{0}' urls to 'urls/{0}.url'.".format(target))
 
 
-def write_summary(logger):
+def write_program_end(logger):
 
     print(HORIZONTAL_RULE.format('*'))
     print(HEADER.format("SUMMARY", '*'))
@@ -350,7 +350,6 @@ def write_loop_start(par):
     print(HORIZONTAL_RULE.format('-'))
 
 
-
 def write_program_start():
     print('\n')
     print(HORIZONTAL_RULE.format('#'))
@@ -376,7 +375,6 @@ def main():
     """
 
     write_program_start()
-
     logger = Logger()
 
     with open("token/token.txt", 'r') as infile:
@@ -390,12 +388,7 @@ def main():
     }
 
     parameters = ["projects", "experiments", "stats", "variations"]
-#    parameters = ["projects", "experiments"]
     for par in parameters:
-
-        urls_in = []
-        urls_fail = []
-        urls_out = {}
 
         write_loop_start(par)
 
@@ -406,30 +399,19 @@ def main():
 
         responses = get_requests(urls_in, token)
 
+        urls_fail = []
         for url in urls_in:
             if responses[url][0] != 200:
                 responses.pop(url, None)
                 urls_fail.append(url)
 
-#        urls_fail = [url for url in urls if responses[url][0] != 200]
-#        logger.request_status[par] = (len(urls)-len(urls_fail), len(urls))
-#        with open("urls/failures.url", 'w' if par == 'projects' else 'a') as outfile:
-#            for url in urls_fail:
-#                outfile.write(url + '\n')
-#                responses.pop(url, None)
+        json_content = [v[1] for v in list(responses.values())]
+        dataframe = content_to_dataframe(json_content)
 
-        content = [v[1] for v in list(responses.values())]
-
-        dataframe = content_to_dataframe(content)
-
+        urls_out = {}
         for target in targets[par]:
             urls_out[target] = _generate_urls(dataframe, target)
-    
-#            with open("urls/{}.url".format(target), 'w') as outfile:
-#                for url in urls_out:
-#                    outfile.write(url + '\n')
 
-        # Write to files
         dataframe.to_csv("output/{}.csv".format(par), index=False)
 
         with open("urls/failures.url", 'w' if par == 'projects' else 'a') as outfile:
@@ -441,13 +423,12 @@ def main():
                 for url in urls_out[target]:
                     outfile.write(url + '\n')
 
-        # Update logger
         logger.request_status[par] = (len(responses), len(urls_in))
         logger.elapsed[par] = default_timer() - start_time
 
         write_loop_end(par, targets)
 
-    write_summary(logger)
+    write_program_end(logger)
 
 if __name__ == "__main__":
     main()
