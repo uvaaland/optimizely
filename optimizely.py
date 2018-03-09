@@ -215,7 +215,13 @@ def get_data(par, token, log, async=True):
             responses.pop(url, None)
             urls_fail.append(url)
 
+#        with open("urls/failures.url", 'w' if par == 'projects' else 'a') as outfile:
+#            for url in urls_fail:
+#                outfile.write(url + '\n')
+
+
     data = _content_to_dataframe(list(responses.values()))
+
     log.pulled[par] = (len(responses), len(urls))
 
     return data
@@ -372,6 +378,7 @@ def main():
     """
 
     write_program_start()
+
     log = Log()
 
     with open("token/token.txt", 'r') as infile:
@@ -392,24 +399,10 @@ def main():
         start_time = default_timer()
 
         data = get_data(par, token, log)
-        data.to_csv("output/{}.csv".format(par), index=False)
 
         generate_url_files(data, targets[par])
 
-#        urls_out = {}
-#        for target in targets[par]:
-#            urls_out[target] = _generate_urls(data, target)
-
-
-#        with open("urls/failures.url", 'w' if par == 'projects' else 'a') as outfile:
-#            for url in urls_fail:
-#                outfile.write(url + '\n')
-
-#        for target in urls_out:
-#            with open("urls/{}.url".format(target), 'w') as outfile:
-#                for url in urls_out[target]:
-#                    outfile.write(url + '\n')
-
+        data.to_csv("output/{}.csv".format(par), index=False)
 
         log.elapsed[par] = default_timer() - start_time
 
