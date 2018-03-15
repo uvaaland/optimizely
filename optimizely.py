@@ -66,10 +66,9 @@ async def fetch_all(urls, token):
         token: A string with token that is needed to make requests.
 
     Returns:
-        A dictionary that maps url keys to a tuple containing the status and
-        json content of the corresponding request. For example:
+        A dictionary that maps the url of a website to its json content. For example:
 
-        {"https://example.com" : (200, [{"name" : "John", "city" : "New York"};])
+        {"https://example.com" : [{"name" : "John", "city" : "New York"};]}
     """
 
     tasks = []
@@ -98,8 +97,7 @@ async def fetch(url, token, session, tracker):
             of iterations.
 
     Returns:
-        A dictionary that maps the url to a tuple containing the request status
-        and a list of the json content of said request.
+        A dictionary that maps the url of a website to its json content.
     """
 
     header = {'Token': token}
@@ -113,7 +111,6 @@ async def fetch(url, token, session, tracker):
             else:
                 content = None
 
-        # Print status
         tracker[0] = tracker[0] + 1
         count = "[{0:03}/{1:03}]:".format(tracker[0], tracker[1])
         print(STATUS_BAR.format(count, ".../" + url[31:], str(status == 200)))
@@ -132,10 +129,9 @@ def _get_requests_async(urls, token):
         token: A string with token that is needed to make requests.
 
     Returns:
-        A dictionary that maps url keys to a tuple containing the status and
-        json content of the corresponding request. For example:
+        A dictionary that maps the url of a website to its json content. For example:
 
-        {"https://example.com" : (200, [{"name" : "John", "city" : "New York"};])
+        {"https://example.com" : [{"name" : "John", "city" : "New York"};]}
     """
 
     loop = asyncio.get_event_loop()
@@ -148,18 +144,17 @@ def _get_requests_async(urls, token):
 def _get_requests_sync(urls, token):
     """Fetch list of web pages sequentially.
 
-    Fetches a list of web pages sequentially and extracts the request status
-    and json content which is mapped to the url in a dictionary.
+    Fetches a list of web pages sequentially, extracts the json content,
+    and maps it to the url in a dictionary.
 
     Args:
         urls: A list of web pages.
         token: A string with token that is needed to make requests.
 
     Returns:
-        A dictionary that maps url keys to a tuple containing the status and
-        json content of the corresponding request. For example:
+        A dictionary that maps the url of a website to its json content. For example:
 
-        {"https://example.com" : (200, [{"name" : "John", "city" : "New York"};])
+        {"https://example.com" : [{"name" : "John", "city" : "New York"};]}
     """
 
     responses = {}
@@ -175,7 +170,6 @@ def _get_requests_sync(urls, token):
 
         responses[url] =  content
 
-        # Print status
         count = "[{0:03}/{1:03}]:".format(i+1, len(urls))
         print(STATUS_BAR.format(count, ".../" + url[31:], str(status == 200)))
 
@@ -208,6 +202,8 @@ def get_data(par, token, log, async=True):
         responses = _get_requests_async(urls, token)
     else:
         responses = _get_requests_sync(urls, token)
+    
+    print(HORIZONTAL_RULE.format('-'))
         
     urls_fail = []
     for url in urls:
@@ -215,19 +211,25 @@ def get_data(par, token, log, async=True):
             responses.pop(url, None)
             urls_fail.append(url)
 
-#        with open("urls/failures.url", 'w' if par == 'projects' else 'a') as outfile:
-#            for url in urls_fail:
-#                outfile.write(url + '\n')
+    if urls_fail != []:
+        failfile = "urls/fail_{}.url".format(par)
+        #with open("urls/failures.url", 'w' if par == 'projects' else 'a') as outfile:
+        with open(failfile, 'w') as outfile:
+            for url in urls_fail:
+                outfile.write(url + '\n')
+
+        # Print status
+        print("Generated url file: {}".format(failfile))
 
 
-    data = _content_to_dataframe(list(responses.values()))
+    data = _convert_to_dataframe(list(responses.values()))
 
     log.pulled[par] = (len(responses), len(urls))
 
     return data
 
 
-def _content_to_dataframe(content):
+def _convert_to_dataframe(content):
     """Converts a list of json data to a dataframe.
 
     Takes a list of json data and converts each element to a dataframe. Then
@@ -301,7 +303,26 @@ def generate_url_files(dataframe, targets):
                 outfile.write(url + '\n')
 
         # Print status
-        print("Saved '{0}' urls to 'urls/{0}.url'.".format(target))
+        print("Generated url file: urls/{0}.url".format(target))
+
+    print('\n')
+
+
+def write_program_start():
+    print('\n')
+    print(HORIZONTAL_RULE.format('#'))
+    print(HEADER.format("OPTIMIZELY", '#'))
+    print(HORIZONTAL_RULE.format('#'))
+    print('\n')
+
+
+def write_loop_start(par):
+    print(HORIZONTAL_RULE.format('-'))
+    print(HEADER.format(par.upper(), ' '))
+    print(HORIZONTAL_RULE.format('-'))
+
+    print(STATUS_BAR.format("#", "REQUEST (https://www.optimizelyapis.com/...)", "SUCCESS"))
+    print(HORIZONTAL_RULE.format('-'))
 
 
 def write_program_end(log):
@@ -334,32 +355,6 @@ def write_program_end(log):
     print()
 
     print(HORIZONTAL_RULE.format('*'))
-
-
-def write_loop_end(par, targets):
-    print(HORIZONTAL_RULE.format('-'))
-    print("Saved '{0}' frame to 'output/{0}.csv'.".format(par))
-    for target in targets[par]:
-        print("Saved '{0}' urls to 'urls/{0}.url'.".format(target))
-    print('\n')
-
-
-def write_loop_start(par):
-    print(HORIZONTAL_RULE.format('-'))
-    print(HEADER.format(par.upper(), ' '))
-    print(HORIZONTAL_RULE.format('-'))
-
-    print(STATUS_BAR.format("#", "REQUEST (https://www.optimizelyapis.com/...)", "SUCCESS"))
-    print(HORIZONTAL_RULE.format('-'))
-
-
-def write_program_start():
-    print('\n')
-    print(HORIZONTAL_RULE.format('#'))
-    print(HEADER.format("OPTIMIZELY", '#'))
-    print(HORIZONTAL_RULE.format('#'))
-    print('\n')
-
 
 
 def main():
@@ -405,8 +400,6 @@ def main():
         data.to_csv("output/{}.csv".format(par), index=False)
 
         log.elapsed[par] = default_timer() - start_time
-
-        write_loop_end(par, targets)
 
     write_program_end(log)
 
