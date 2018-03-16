@@ -40,18 +40,35 @@ HORIZONTAL_RULE = "{0}"*80
 
 
 class Log:
+    """Class for monitoring program execution.
+
+    Creates a log file which contains all the prints that occur during program
+    execution and names the file according to the date of execution. Also keeps
+    track of the execution times and number of successful requests for each of
+    the parameters.
+
+    Attributes:
+        terminal: File object for printing during the program execution.
+        log: File object for logging the program execution.
+        elapsed: Dictionary for timing the requests.
+        pulled: Dictionary for counting the number of successful requests.
+    """
 
     def __init__(self):
+        """Inits the Log class with attributes for logging the program
+        execution."""
         self.terminal = sys.stdout
         self.log = open("{}.log".format(time.strftime("%Y-%m-%d")), "a")
         self.elapsed = {}
         self.pulled = {}
 
     def write(self, message):
+        """Makes program print to terminal and write to log file."""
         self.terminal.write(message)
         self.log.write(message)
 
     def flush(self):
+        """Dummy method."""
         pass
 
 
@@ -168,7 +185,7 @@ def _get_requests_sync(urls, token):
             content = None
         status = response.status_code
 
-        responses[url] =  content
+        responses[url] = content
 
         count = "[{0:03}/{1:03}]:".format(i+1, len(urls))
         print(STATUS_BAR.format(count, ".../" + url[31:], str(status == 200)))
@@ -194,7 +211,7 @@ def get_data(par, token, log, async=True):
         A dataframe with all the data from the web pages associated with the
         given parameter, 'par'.
     """
-    
+
     with open("urls/{}.url".format(par), 'r') as infile:
         urls = infile.read().splitlines()
 
@@ -202,12 +219,12 @@ def get_data(par, token, log, async=True):
         responses = _get_requests_async(urls, token)
     else:
         responses = _get_requests_sync(urls, token)
-    
+
     print(HORIZONTAL_RULE.format('-'))
-        
+
     urls_fail = []
     for url in urls:
-        if responses[url] == None:
+        if responses[url] is None:
             responses.pop(url, None)
             urls_fail.append(url)
 
