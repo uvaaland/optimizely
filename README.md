@@ -53,4 +53,4 @@ NOTE: No tests are currently implemented and this step will fail.
 ```
 
 3. Once the procedure has finished, the data can be found as .csv files in the output/ folder.
-
+A log of the run can be found in the 'YYYY-MM-DD.log' file corresponding to the date of the run.
