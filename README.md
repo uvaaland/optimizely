@@ -25,6 +25,7 @@ Code for pulling Optimizely data for M4A.
 ```shell
     make test
 ```
+NOTE: No tests are currently implemented and this step will fail.
 
 ## PROVIDE TOKEN FILE
 
@@ -50,7 +51,6 @@ Code for pulling Optimizely data for M4A.
 ```shell
     make pull
 ```
-The whole procedure takes ~1 minute.
 
 3. Once the procedure has finished, the data can be found as .csv files in the output/ folder.
 
