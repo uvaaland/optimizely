@@ -181,18 +181,18 @@ def get_data(par, token, log, async=True):
 
     Takes in a list of web pages and a token and launches a routine for
     fetching the web pages which can be asyncronous or sequential, depending on
-    the async parameter.
+    the async parameter. It also writes out the urls of requests that failed,
+    which can be found in the files prefixed with 'fail' in the urls/ folder.
 
     Args:
-        urls: A list of web pages.
-        token: A string with token that is needed to make requests.
+        par: A string with the parameter to be pulled.
+        token: A string with the token that is needed to make requests.
+        log: Object for monitoring program execution.
         async: Optional argument for running in asynchronous mode.
 
     Returns:
-        A dictionary that maps url keys to a tuple containing the status and
-        json content of the corresponding request. For example:
-
-        {"https://example.com" : (200, [{"name" : "John", "city" : "New York"};])
+        A dataframe with all the data from the web pages associated with the
+        given parameter, 'par'.
     """
     
     with open("urls/{}.url".format(par), 'r') as infile:
@@ -213,14 +213,11 @@ def get_data(par, token, log, async=True):
 
     if urls_fail != []:
         failfile = "urls/fail_{}.url".format(par)
-        #with open("urls/failures.url", 'w' if par == 'projects' else 'a') as outfile:
         with open(failfile, 'w') as outfile:
             for url in urls_fail:
                 outfile.write(url + '\n')
 
-        # Print status
         print("Generated url file: {}".format(failfile))
-
 
     data = _convert_to_dataframe(list(responses.values()))
 
@@ -250,7 +247,7 @@ def _convert_to_dataframe(content):
     return pd.concat(dfs)
 
 
-def _generate_urls(dataframe, target):
+def _generate_urls(data, target):
     """Generates a list of urls based on data from the dataframe.
 
     Takes in a dataframe and a target for which urls will be generated. Chooses
@@ -258,7 +255,7 @@ def _generate_urls(dataframe, target):
     urls accordingly.
 
     Args:
-        dataframe: A dataframe containing information from a set of web pages.
+        data: A dataframe containing data from a set of web pages.
         target: A string with the name for which urls should be generated.
 
     Returns:
@@ -272,23 +269,23 @@ def _generate_urls(dataframe, target):
         }[target]
 
     if target == "variations":
-        ids = [item for sublist in dataframe["variation_ids"] for item in sublist]
+        ids = [item for sublist in data["variation_ids"] for item in sublist]
     else:
-        ids = dataframe["id"]
+        ids = data["id"]
 
     return ["https://www.optimizelyapis.com/" + target_url.format(i) for i in ids]
 
 
-def generate_url_files(dataframe, targets):
-    """Writes a file of urls for the given targets.
+def generate_url_files(data, targets):
+    """Writes a file of urls for each of the given targets.
 
     Takes in a dataframe and a list of targets and generates a url file for
-    each of the targets based on the information in the dataframe. The output
+    each of the targets based on the data in the dataframe. The output
     url file can be found in the urls/ folder.
 
     Args:
-        dataframe: A dataframe containing information from a set of web pages.
-        targets: A list of strings with the name for which a url file should be
+        data: A dataframe containing information from a set of web pages.
+        targets: A list of strings with names for which url files should be
             generated.
 
     Returns:
@@ -296,19 +293,26 @@ def generate_url_files(dataframe, targets):
     """
 
     for target in targets:
-        urls = _generate_urls(dataframe, target)
+        urls = _generate_urls(data, target)
 
         with open("urls/{}.url".format(target), 'w') as outfile:
             for url in urls:
                 outfile.write(url + '\n')
 
-        # Print status
         print("Generated url file: urls/{0}.url".format(target))
 
     print('\n')
 
 
 def write_program_start():
+    """Prints a status at the start of the program.
+
+    Args:
+        None
+    Returns:
+        None
+    """
+
     print('\n')
     print(HORIZONTAL_RULE.format('#'))
     print(HEADER.format("OPTIMIZELY", '#'))
@@ -317,15 +321,29 @@ def write_program_start():
 
 
 def write_loop_start(par):
+    """Prints a status at the start of each parameter loop.
+
+    Args:
+        par: A string with the parameter to be pulled.
+    Returns:
+        None
+    """
+
     print(HORIZONTAL_RULE.format('-'))
     print(HEADER.format(par.upper(), ' '))
     print(HORIZONTAL_RULE.format('-'))
-
     print(STATUS_BAR.format("#", "REQUEST (https://www.optimizelyapis.com/...)", "SUCCESS"))
     print(HORIZONTAL_RULE.format('-'))
 
 
 def write_program_end(log):
+    """Prints a summary of the run at the end of the program.
+
+    Args:
+        log: Object for monitoring program execution.
+    Returns:
+        None
+    """
 
     print(HORIZONTAL_RULE.format('*'))
     print(HEADER.format("SUMMARY", '*'))
@@ -402,6 +420,7 @@ def main():
         log.elapsed[par] = default_timer() - start_time
 
     write_program_end(log)
+
 
 if __name__ == "__main__":
     main()
