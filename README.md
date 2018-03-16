@@ -1,6 +1,6 @@
-# OPTIMIZELY API FOR M4A
+# PULLING DATA FROM OPTIMIZELY
 
-Code for pulling Optimizely data for M4A.
+Code for pulling project, experiment, stats, and variation data from Optimizely.
 
 ## SETUP
 
