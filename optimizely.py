@@ -410,6 +410,7 @@ def main():
     write_program_start()
 
     log = Log()
+    sys.stdout = log
 
     with open("token/token.txt", 'r') as infile:
         token = infile.read().rstrip('\n')
