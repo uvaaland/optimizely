@@ -11,8 +11,8 @@ Code for pulling project, experiment, stats, and variation data from Optimizely.
 
 2. Setup Conda environment
 ```shell
-    conda create -n m4a python=3
-    source activate m4a
+    conda create -n optimizely python=3
+    conda activate optimizely
 ```
 
 3. Install requirements
