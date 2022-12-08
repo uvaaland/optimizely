@@ -2,7 +2,7 @@ aiohttp==3.2.1
 async-timeout==3.0.0
 attrs==18.1.0
 calysto-processing==2.0.3
-certifi==2018.4.16
+certifi==2022.12.7
 chardet==3.0.4
 decorator==4.3.0
 html2text==2018.1.9
